@@ -60,7 +60,7 @@ pipeline {
             $class: 'GitSCM', 
             branches: [[name: "*/main"]], 
             userRemoteConfigs: [[
-              url: 'https://github.com/lamelihuynh/linh-test',
+              url: 'https://github.com/lamelihuynh/tetris-app',
             ]]
           ])
           
@@ -278,9 +278,9 @@ pipeline {
           sh '''
           set -e 
           
-        git config user.email "jenkins@localhost"
+          git config user.email "jenkins@localhost"
           git config user.name "Jenkins CI"
-          git remote set-url origin https://${GIT_TOKEN}@github.com/lamelihuynh/linh-test.git 
+          git remote set-url origin https://${GIT_TOKEN}@github.com/lamelihuynh/tetris-infra.git 
 
           git checkout -B main
           git pull origin main --rebase
