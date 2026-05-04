@@ -1,23 +1,27 @@
-# Use the official Node.js 16 image as the base image
-FROM node:16
-
-# Set the working directory inside the container
+# ==========================================
+# STAGE 1: Build (Biên dịch code React)
+# ==========================================
+FROM node:16 AS builder
 WORKDIR /app
 
-# Copy package.json and package-lock.json (or yarn.lock) to the container
+# Copy và cài đặt dependencies
 COPY package*.json ./
-
-# Install project dependencies
 RUN npm install
 
-# Copy the rest of the application code to the container
+# Copy source code và tiến hành build
 COPY . .
-
-# Build the React app
 RUN npm run build
 
-# Expose the port that the app will run on (usually 3000 by default)
-EXPOSE 3000
+# ==========================================
+# STAGE 2: Deploy (Phục vụ file tĩnh bằng Nginx)
+# ==========================================
+FROM nginx:alpine
 
-# Start the React app when the container starts
-CMD [ "npm", "start" ]
+# Copy toàn bộ file tĩnh đã được build ở Stage 1 sang thư mục của Nginx
+COPY --from=builder /app/build /usr/share/nginx/html
+
+# Expose cổng 80 (cổng mặc định của web tĩnh)
+EXPOSE 80
+
+# Chạy Nginx ở chế độ background
+CMD ["nginx", "-g", "daemon off;"]
