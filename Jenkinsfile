@@ -274,34 +274,32 @@ pipeline {
         string(credentialsId: 'github-token', variable: 'GIT_TOKEN')
       ]){
         script{
-          echo "Deploying to staging via GitOps.."
           sh '''
-          set -e 
+
+          rm -rf temp-infra-repo 
+
+          echo "Cloning Infra Repository..."
+          git clone https://${GIT_TOKEN}@github.com/lamelihuynh/tetris-infra.git temp-infra-repo
+
+          cd temp-infra-repo
           
           git config user.email "jenkins@localhost"
           git config user.name "Jenkins CI"
-          git remote set-url origin https://${GIT_TOKEN}@github.com/lamelihuynh/tetris-infra.git 
-
-          git checkout -B main
-          git pull origin main --rebase
 
           cd kubernetes/overlays/staging
-          echo "Updating staging kustomization..."
+
+          # Update version of the application 
+          echo "[*] Updating staging kustomization..."
           kustomize edit set image tetris-devsecops=${IMAGE_URI}
 
           cd ../../../
-
+          
           git add kubernetes/overlays/staging/kustomization.yaml
-          git commit -m "[skip ci] Staging: ${IMAGE_TAG}" || echo "No changes"
+          git commit -m "Auto-deploy Staging: Update image to ${IMAGE_TAG}" || echo "No changes"
           git push origin main || echo "Nothing to push"
-
-
-          echo "Stagin kustomization updated"
+          echo "Staging kustomization updated successfully in tetris-infra"
           echo "Waiting for ArgoCD to sync..."
-
           sleep 5
-
-
           '''
         }
       }
