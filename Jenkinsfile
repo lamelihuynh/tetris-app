@@ -35,6 +35,7 @@ pipeline {
     REPO_NAME = "devsecops/tetris"
     IMAGE_NAME = "${REGISTRY}/${REPO_NAME}"
     SONAR_HOST = "http://sonarqube:9000"
+
     SCAN_REPORT_DIR = "${WORKSPACE}/scan-reports"
     KUBECONFIG = "/home/jenkins/.kube/config"
   }
@@ -46,31 +47,34 @@ pipeline {
     buildDiscarder(logRotator(numToKeepStr: '10'))
   }
 
-  stage('1. Checkout Target Repo') {
-        steps {
-            script {
-                echo "==== CHECKING OUT TARGET PROJECT ===="
-                dir('target-repo') {
-                    def scmVars = checkout([
-                        $class: 'GitSCM', 
-                        branches: [[name: "*/${params.TARGET_BRANCH}"]], 
-                        userRemoteConfigs: [[ url: "${params.TARGET_REPO}" ]]
-                    ])
-                    
-                    if (scmVars && scmVars.GIT_COMMIT) {
-                        env.GIT_COMMIT_SHORT = scmVars.GIT_COMMIT.substring(0, 7)
-                    } else {
-                        env.GIT_COMMIT_SHORT = "build-${env.BUILD_NUMBER}"
-                    }
-                }
-            }
+  stages{
+    stage('1. Checkout') {
+      steps {
+        script {
+          echo "==== CHECKING OUT TARGET PROJECT ===="
+          dir ('target-repo')
+          def scmVars = checkout([
+            $class: 'GitSCM', 
+            branches: [[name: "*/main"]], 
+            userRemoteConfigs: [[
+              url: 'https://github.com/lamelihuynh/tetris-app',
+            ]]
+          ])
+          
+          if (scmVars != null && scmVars.GIT_COMMIT != null) {
+            env.GIT_COMMIT_SHORT = scmVars.GIT_COMMIT.toString().substring(0, 7)
+          } else {
+            env.GIT_COMMIT_SHORT = "build-${env.BUILD_NUMBER}"
           }
-  }
+          
+          echo "TAG IMMAGE : ${env.GIT_COMMIT_SHORT}"
+        }
+      }
+    }
     
 
 
 
-    
     stage('2. Prepare Metadata'){
       steps{
         script{
@@ -154,7 +158,8 @@ pipeline {
         script{
           echo " ==== Running SAST scan ==== "
 
-      
+          sh '''
+          '''
         }
       }
     }
@@ -340,7 +345,7 @@ pipeline {
 
 
 
-      stage('13. Verify Production'){
+  stage('13. Verify Production'){
       steps{
         script{
           echo '==== Running DAST scan ===='
@@ -358,10 +363,8 @@ pipeline {
         }
       }
     }
-  
-  
   }
-
+}
 
 
 
