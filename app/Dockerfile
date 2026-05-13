@@ -10,7 +10,8 @@
 # Trivy check: Known CVEs in node:16 image
 #   e.g. CVE-2023-30581, CVE-2023-38552, CVE-2023-39331 etc.
 # Correct: Use node:lts-alpine or node:22-alpine
-FROM node:18-bullseye
+
+FROM node:16
 
 # VULN: Not running as non-root (no USER directive until CMD)
 # Trivy check: AVD-DS-0002 "Specify at least 1 USER command in Dockerfile"
@@ -49,8 +50,8 @@ COPY . .
 # Even if deleted in a later layer, the secret persists in the
 # intermediate layer and can be extracted with: docker image history
 # VULN: .env file copied into the image — credentials baked into layers
-COPY backend/.env ./chatapp/backend/.env
-COPY key.txt ./chatapp/key.txt
+COPY chatapp/backend/.env ./chatapp/backend/.env
+COPY chatapp/key.txt ./chatapp/key.txt
 
 # CASE 6 — Sensitive admin tool included in image
 # VULN: mongodump/mongoexport included — enables bulk data extraction
