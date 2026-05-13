@@ -46,7 +46,7 @@ pipeline {
     buildDiscarder(logRotator(numToKeepStr: '10'))
   }
 
-      stage('1. Checkout Target Repo') {
+    stage('1. Checkout Target Repo') {
         steps {
             script {
                 echo "==== CHECKING OUT TARGET PROJECT ===="
@@ -70,6 +70,7 @@ pipeline {
 
 
 
+    
     stage('2. Prepare Metadata'){
       steps{
         script{
@@ -153,8 +154,7 @@ pipeline {
         script{
           echo " ==== Running SAST scan ==== "
 
-          sh '''
-          '''
+      
         }
       }
     }
@@ -358,8 +358,10 @@ pipeline {
         }
       }
     }
+  
+  
   }
-}
+
 
 
 
