@@ -46,7 +46,7 @@ pipeline {
     buildDiscarder(logRotator(numToKeepStr: '10'))
   }
 
-    stage('1. Checkout Target Repo') {
+  stage('1. Checkout Target Repo') {
         steps {
             script {
                 echo "==== CHECKING OUT TARGET PROJECT ===="
@@ -65,7 +65,7 @@ pipeline {
                 }
             }
           }
-        }
+  }
     
 
 
