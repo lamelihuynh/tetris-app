@@ -1,5 +1,8 @@
 rm -rf Jenkinsfile
 cp /Users/huynhnhatlinh0305/Downloads/devsecops-factory/ci/Jenkinsfile ./ 
+rm -rf ci/stages
+mkdir ci/stages
+cp /Users/huynhnhatlinh0305/Downloads/devsecops-factory/ci/stages ./ci/stages
 echo "// new feature" >> app/src/App.js
 git add . 
 COMMIT_ID=$(cat counter.txt) 
