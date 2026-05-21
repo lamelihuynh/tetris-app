@@ -378,39 +378,39 @@ const Game = () => {
 };
 
 
+
 // VULNERABILITIES - Community Edition DETECTABLE
-const API_SECRET = "sk_test_4eC39HqLyjWDarhtT657LjZP";
-const DB_PASSWORD = "postgres123";
 
 const executeUserCode = (code) => {
-    eval(code);
+    eval(code);  // ← S3523: eval() injection
 };
 
 const RenderUnsafeHTML = (html) => {
-    return <div dangerouslySetInnerHTML={{ __html: html }} />;
-};
-
-const saveHighScore = (name, score) => {
-    localStorage.setItem('highscore_' + name, score);
+    return <div dangerouslySetInnerHTML={{ __html: html }} />;  // ← XSS vulnerability
 };
 
 // Unused variable
-const apiEndpoint = "http://api.example.com";
+const apiEndpoint = "http://api.example.com";  // ← Never used
 
-// Duplicate logic
+// Duplicate logic - S1143
 const calculateScore1 = () => {
     return (score * 100) + (level * 50);
 };
+
 const calculateScore2 = () => {
-    return (score * 100) + (level * 50);  // Duplicate
+    return (score * 100) + (level * 50);  // ← Duplicate code
 };
 
-// Unreachable code
+// Unreachable code - S1128
 const getLevel = () => {
     return level;
-    console.log("Never runs");
+    console.log("Never runs");  // ← Unreachable
 };
 
+// Empty block - S108
+if (someCondition) {
+    // Empty
+}
 
 
 export default Game;
