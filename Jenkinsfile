@@ -25,9 +25,6 @@ def     PROD_URL = "http://tetris.example.com:30080"
 
 pipeline {
   agent any
-  trigger{
-    githubPush()
-  }
   parameters {
         string(name: 'TARGET_REPO', defaultValue: 'https://github.com/lamelihuynh/tetris-app.git', description: 'GitHub URL of project to scan')
         string(name: 'TARGET_BRANCH', defaultValue: 'main', description: 'Branch to checkout')
