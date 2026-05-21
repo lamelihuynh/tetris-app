@@ -34,7 +34,7 @@ pipeline {
     REGISTRY = "localhost:5001"
     REPO_NAME = "devsecops/tetris"
     IMAGE_NAME = "${REGISTRY}/${REPO_NAME}"
-    SONAR_HOST = "http://sonarqube:9000"
+    SONAR_HOST = "http://localhost:9000"
     TARGET_DIR = "${WORKSPACE}/target-repo"
     SCAN_REPORT_DIR = "${WORKSPACE}/scan-reports"
     KUBECONFIG = "/home/jenkins/.kube/config"
@@ -148,26 +148,26 @@ pipeline {
 
 
     stage('5. SAST Scan (SonarQube)') {
-            steps {
-                script {
-                    echo "==== Starting SAST scan (Static Analysis) ===="
-                    withEnv([
-                        "SONAR_HOST=${env.SONAR_HOST}",
-                        "SCAN_DIR=${env.TARGET_DIR}",
-                        "IMAGE_TAG=${env.IMAGE_TAG}"
-                    ]) {
-                        withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
-                            sh 'chmod +x ci/stages/sast-scan.sh && ./ci/stages/sast-scan.sh -Dsonar.sources=target-repo -Dsonar.scm.disabled=true' 
-                        }
-                    }
-                }
-            }
-            post {
-                always {
-                    archiveArtifacts artifacts: "scan-reports/sast-scan-report.*", allowEmptyArchive: true
-                }
-            }
-        }
+      steps {
+          script {
+              echo "==== Starting SAST scan (Static Analysis) ===="
+              withEnv([
+                  "SONAR_HOST=${env.SONAR_HOST}",
+                  "SCAN_DIR=${env.TARGET_DIR}",
+                  "IMAGE_TAG=${env.IMAGE_TAG}"
+              ]) {
+                  withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                      sh 'chmod +x ci/stages/sast-scan.sh && ./ci/stages/sast-scan.sh -Dsonar.sources=target-repo -Dsonar.scm.disabled=true' 
+                  }
+              }
+          }
+      }
+      post {
+          always {
+              archiveArtifacts artifacts: "scan-reports/sast-scan-report.*", allowEmptyArchive: true
+          }
+      }
+    }
 
     stage('6. Build Docker Image'){
       steps{
