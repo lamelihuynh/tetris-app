@@ -9,7 +9,11 @@ echo "============================================================"
 
 TOOL_BASE_DIR="${WORKSPACE}/security/sast"
 TOOL_HOME="${TOOL_BASE_DIR}/sonar-scanner"
+rm -rf "${TOOL_BASE_DIR}"
+
 mkdir -p "${TOOL_BASE_DIR}"
+
+
 
 if [ ! -f "${TOOL_HOME}/bin/sonar-scanner" ]; then
     echo "[*] Sonar Scanner not found. Downloading..."
