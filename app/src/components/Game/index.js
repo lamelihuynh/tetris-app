@@ -377,36 +377,39 @@ const Game = () => {
 };
 
 // ============================================
-// SAST VULNERABILITIES (Obvious patterns)
+// SAST VULNERABILITIES - Thực tế
 // ============================================
 
-// Example 1: Direct SQL Injection
-const unsafeQuery = (userInput) => {
-    const sql = `SELECT * FROM users WHERE id = '${userInput}'`;
-    return sql;
+// Example 1: SQL Injection - DETECTED
+const queryUserData = (userId) => {
+    const mysql = require('mysql');
+    const conn = mysql.createConnection({});
+    // SonarQube S2077: Formatted SQL queries can be risky
+    conn.query('SELECT * FROM users WHERE id = ' + userId, (err, res) => {});
 };
 
-// Example 2: eval() - Code Injection
-const executeCode = (userCode) => {
-    eval(userCode);  // ← SonarQube DEFINITELY detect
+// Example 2: SQL Injection with template - DETECTED
+const fetchUser = (userInput) => {
+    const db = require('pg');
+    const client = new db.Client({});
+    // SonarQube S2077: Formatted SQL queries
+    client.query(`SELECT * FROM users WHERE username = '${userInput}'`);
 };
 
-// Example 3: Hardcoded password in object
+// Example 3: eval() - Code Injection - ALWAYS DETECTED
+const executeUserCode = (code) => {
+    eval(code);  // ← Sẽ detect
+};
+
+// Example 4: Hardcoded credentials - DETECTED
 const dbConfig = {
-    host: "localhost",
-    user: "admin",
-    password: "admin123"  // ← SonarQube detect: hardcoded password
+    password: "admin123"  // ← Detect: hardcoded password
 };
 
-// Example 4: Process command injection
-const runCommand = (filename) => {
+// Example 5: Command Injection - DETECTED
+const shellCommand = (filename) => {
     const { exec } = require('child_process');
-    exec(`rm ${filename}`);  // ← Command Injection
-};
-
-// Example 5: Weak Random (crypto)
-const insecureToken = () => {
-    return Math.random().toString(36).slice(2);  // ← Weak random
+    exec(`rm -rf /app/${filename}`);  // ← Detect
 };
 
 export default Game;
