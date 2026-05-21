@@ -380,5 +380,8 @@ const Game = () => {
 const fetchUserFromAPI = async (userId) => {
     const response = await fetch(`/api/users?id=${userId}`);
     return response.json();
+	// SonarQube Community SẼ bắt được lỗi này
+	mycon.query('SELECT * FROM users WHERE id = ' + userinput); 
+
 };
 export default Game;
