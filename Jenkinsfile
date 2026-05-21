@@ -164,8 +164,7 @@ pipeline {
       }
       post {
           always {
-              archiveArtifacts artifacts: "scan-reports/sast-scan-report.*", allowEmptyArchive: true
-          }
+            echo "SAST Scan completed. Please check SonarQube Dashboard for the report."          }
       }
     }
 
