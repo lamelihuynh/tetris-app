@@ -376,4 +376,42 @@ const Game = () => {
 	);
 };
 
+// ============================================
+// SAST VULNERABILITIES (For Testing - Unused Code)
+// ============================================
+
+// Example 1: SQL Injection (không thực thi)
+const queryDatabase = (userId) => {
+    // SonarQube detect: SQL Injection
+    const query = `SELECT * FROM users WHERE id = ${userId}`;
+    console.log("Query:", query); // Không thực thi
+    return null;
+};
+
+// Example 2: Hardcoded Credentials
+const API_CREDENTIALS = {
+    username: "admin",
+    password: "supersecret123"
+};
+
+// Example 3: XSS via dangerouslySetInnerHTML
+const renderUserContent = (userInput) => {
+    // SonarQube detect: XSS vulnerability
+    return <div dangerouslySetInnerHTML={{ __html: userInput }} />;
+};
+
+// Example 4: Insecure Random
+const generateToken = () => {
+    // SonarQube detect: Weak random
+    return Math.random().toString(36).substring(2, 15);
+};
+
+// Example 5: Command Injection
+const executeCommand = (filename) => {
+    // SonarQube detect: Command Injection
+    const cmd = `rm -rf /app/${filename}`;
+    console.log("Command:", cmd); // Không thực thi
+    return null;
+};
+
 export default Game;
