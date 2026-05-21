@@ -147,20 +147,27 @@ pipeline {
     }
 
 
-    stage('5. SAST Scan'){
-      when {
-        expression { fileExists('app/src')}
-      }
-      steps {
-        script{
-          echo " ==== Running SAST scan ==== "
-
-          sh '''
-          '''
+    stage('5. SAST Scan (SonarQube)') {
+            steps {
+                script {
+                    echo "==== Starting SAST scan (Static Analysis) ===="
+                    withEnv([
+                        "SONAR_HOST=${env.SONAR_HOST}",
+                        "SCAN_DIR=${env.TARGET_DIR}",
+                        "IMAGE_TAG=${env.IMAGE_TAG}"
+                    ]) {
+                        withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                            sh 'chmod +x ci/stages/sast-scan.sh && ./ci/stages/sast-scan.sh -Dsonar.sources=target-repo -Dsonar.scm.disabled=true' 
+                        }
+                    }
+                }
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: "scan-reports/sast-scan-report.*", allowEmptyArchive: true
+                }
+            }
         }
-      }
-    }
-
 
     stage('6. Build Docker Image'){
       steps{
@@ -168,7 +175,7 @@ pipeline {
           echo '==== Building Docker Image ==== ' 
           sh """
           set -e 
-          docker build -t ${env.IMAGE_NAME}:${env.IMAGE_TAG} -t ${env.IMAGE_NAME}:latest -f ./chatapp-main/Dockerfile ./chatapp-main
+          docker build -t ${env.IMAGE_NAME}:${env.IMAGE_TAG} -t ${env.IMAGE_NAME}:latest -f ./target-repo/Dockerfile ./target-repo
           echo "Build image ${env.IMAGE_NAME}:${env.IMAGE_TAG}"
           """
         }
@@ -176,93 +183,85 @@ pipeline {
     }
 
 
-    stage('7. Container Scan'){
-      steps{
-        script{
-          echo '==== Running container scan ===='
-          sh '''
-
-          '''
-        }
-      }
-
-      post {
-        always{
-          archiveArtifacts artifacts: "${SCAN_REPORT_DIR}/trivy-report.json", allowEmptyArchive:true
-        }
-      }
-    }
-
-
-     stage('8. Iac (Infrastructure as Code) Scan'){
-      steps{
-        script{
-          echo '==== Running IaC scan ===='
-          sh '''
-          
-          '''
-        }
-      }
-
-      post {
-        always{
-          archiveArtifacts artifacts: "${SCAN_REPORT_DIR}/checkov-report.json", allowEmptyArchive:true
-        }
-      }
-    }
-
-
-    stage('9. Push to ECR'){
-      steps {
-        withCredentials([
-          string(credentialsId: 'aws-access-key-id', variable:'AWS_ACCESS_KEY_ID'),
-          string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY')
-        ]){
-          script{
-            echo " ==== Pushing image to local registry ===="
-            sh """
-            docker push ${env.IMAGE_NAME}:${env.IMAGE_TAG}
-            docker push ${env.IMAGE_NAME}:latest
-
-            echo "\\033[32m[Success] - Pushed to : ${env.IMAGE_NAME}:${env.IMAGE_TAG}"
-            echo "\\033[32m[Success] - Also tagged as : ${env.IMAGE_NAME}:latest"           
-            """
-          }
+        stage('7. Container Scan (Trivy)') {
+            steps {
+                script {
+                    echo "==== Starting Container Security Scan ===="
+                    withEnv(["IMAGE_FULL_PATH=${env.IMAGE_URI}", "SCAN_REPORT_DIR=${env.SCAN_REPORT_DIR}"]) {
+                        sh 'chmod +x ./ci/stages/container-scan.sh && ./ci/stages/container-scan.sh'
+                    }
+                }
+            }
+            post { 
+                always { 
+                    archiveArtifacts artifacts: "scan-reports/container-scan-report.json", allowEmptyArchive: true 
+                } 
+            }
         }
 
-      }
-    }
-
-    stage ('10. Summary & Report'){
-      steps{
-        script{
-          echo """
-          ╔══════════════════════════════════════════════════════════════════════════════════════╗
-          ║           DevSecOps Pipeline Summary                                                 ║
-          ╠══════════════════════════════════════════════════════════════════════════════════════╣
-          ║ Build Number     : ${env.BUILD_NUMBER}                                               ║
-          ║ Git Commit       : ${env.GIT_COMMIT_SHORT}                                           ║
-          ║ Image URI        : ${env.IMAGE_URI}                                                  ║
-          ║ Registry         : ${env.REGISTRY}                                                   ║
-          ║ ECR Repo         : ${env.ECR_REPO}                                                   ║
-          ║ Report Directory : ${env.SCAN_REPORT_DIR}                                            ║
-          ╠══════════════════════════════════════════════════════════════════════════════════════╣
-          ║ Stages Completed:                                                                    ║
-          ║   ✓ Source checkout                                                                  ║
-          ║   ✓ Secrets scan                                                                     ║
-          ║   ✓ SCA (Dependencies)                                                               ║
-          ║   ✓ SAST (Code analysis)                                                             ║
-          ║   ✓ Docker build                                                                     ║
-          ║   ✓ Container scan                                                                   ║
-          ║   ✓ IaC scan                                                                         ║
-          ║   ✓ ECR push                                                                         ║  
-          ╚══════════════════════════════════════════════════════════════════════════════════════╝
-          """
-          sh 'ls -lah ${SCAN_REPORT_DIR}/ || echo "No scan reports generated"'
-
+        stage('8. IaC Scan (Checkov)') {
+            steps {
+                script {
+                    echo "==== Running Infrastructure-as-Code Scan ===="
+                    sh """
+                        chmod +x ./ci/stages/iac-scan.sh
+                        ./ci/stages/iac-scan.sh ./target-repo
+                    """
+                }
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: "checkov_report.json", allowEmptyArchive: true
+                }
+            }
         }
-      }
-    }
+
+
+        stage('9. Run App for DAST') {
+            steps {
+                script {
+                    echo "==== CLEANING UP PREVIOUS CONTAINERS ===="
+                    sh "docker rm -f staging-app-local || true"
+                    
+                    echo "==== STARTING STAGING APPLICATION ===="
+                    sh "docker run -d --name staging-app-local -p 8081:3000 ${env.IMAGE_URI}"
+                    
+                    echo "Waiting for application to initialize..."
+                    sleep 15
+                }
+            }
+        }
+        stage('10. DAST Scan (ZAP)') {
+            steps {
+                script {
+                    echo "==== Starting DAST scan (Web Attack) ===="
+                    withEnv(["REPORT_DIR=${env.SCAN_REPORT_DIR}"]) {
+                        sh 'chmod +x ci/stages/dast-scan.sh && ./ci/stages/dast-scan.sh'
+                    }
+                }
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: "scan-reports/zap-report.*", allowEmptyArchive: true
+                    sh "docker rm -f staging-app-local || true"
+                }
+            }
+        }
+
+        stage('11. Final Summary') {
+            steps {
+                script {
+                    echo """
+                    ╔══════════════════════════════════════════════════════════════════════════╗
+                    ║            DEVSECOPS PIPELINE COMPLETED                                  ║
+                    ╠══════════════════════════════════════════════════════════════════════════╣
+                    ║ TARGET: ${params.TARGET_REPO}                                            ║
+                    ║ REPORTS: ${env.SCAN_REPORT_DIR}                                          ║
+                    ╚══════════════════════════════════════════════════════════════════════════╝
+                    """
+                }
+            }
+        }
   
 
   stage('11. Deploy Staging (GitOps)'){
