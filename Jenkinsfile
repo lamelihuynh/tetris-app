@@ -35,7 +35,7 @@ pipeline {
     REPO_NAME = "devsecops/tetris"
     IMAGE_NAME = "${REGISTRY}/${REPO_NAME}"
     SONAR_HOST = "http://sonarqube:9000"
-
+    TARGET_DIR = "${WORKSPACE}/target-repo"
     SCAN_REPORT_DIR = "${WORKSPACE}/scan-reports"
     KUBECONFIG = "/home/jenkins/.kube/config"
   }
