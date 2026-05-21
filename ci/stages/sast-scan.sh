@@ -13,14 +13,16 @@ mkdir -p "${TOOL_BASE_DIR}"
 
 if [ ! -f "${TOOL_HOME}/bin/sonar-scanner" ]; then
     echo "[*] Sonar Scanner not found. Downloading..."
-    curl -sSLo /tmp/sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-5.0.1.3006-linux.zip
+    # ĐỔI LINK: Bỏ chữ -linux đi để dùng bản OS-Independent
+    curl -sSLo /tmp/sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-5.0.1.3006.zip
     unzip -o -q /tmp/sonar-scanner.zip -d "${TOOL_BASE_DIR}/"
 
-    mv "${TOOL_BASE_DIR}/sonar-scanner-5.0.1.3006-linux" "${TOOL_HOME}"
+    # Đổi tên thư mục giải nén (cũng bỏ chữ -linux)
+    mv "${TOOL_BASE_DIR}/sonar-scanner-5.0.1.3006" "${TOOL_HOME}"
 fi
 
 chmod +x "${TOOL_HOME}/bin/sonar-scanner"
-chmod +x "${TOOL_HOME}/jre/bin/java"
+# ĐÃ XOÁ: chmod +x "${TOOL_HOME}/jre/bin/java" (Vì bản này không có thư mục jre)
 
 echo "[*] Running scan..."
 
