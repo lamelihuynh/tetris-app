@@ -379,37 +379,24 @@ const Game = () => {
 // ============================================
 // SAST VULNERABILITIES - Thực tế
 // ============================================
+// ============================================
+// GUARANTEED DETECTABLE VULNERABILITIES
+// ============================================
 
-// Example 1: SQL Injection - DETECTED
-const queryUserData = (userId) => {
-    const mysql = require('mysql');
-    const conn = mysql.createConnection({});
-    // SonarQube S2077: Formatted SQL queries can be risky
-    conn.query('SELECT * FROM users WHERE id = ' + userId, (err, res) => {});
-};
+// 1. Hardcoded password (ALWAYS DETECTED)
+const API_KEY = "sk_live_51K3j5FBXXXtJ7XXXXX";
+const PASSWORD = "admin123";
+const SECRET = "my-secret-key";
 
-// Example 2: SQL Injection with template - DETECTED
-const fetchUser = (userInput) => {
-    const db = require('pg');
-    const client = new db.Client({});
-    // SonarQube S2077: Formatted SQL queries
-    client.query(`SELECT * FROM users WHERE username = '${userInput}'`);
-};
+// 2. eval() ALWAYS DETECTED
+eval("console.log('test')");
 
-// Example 3: eval() - Code Injection - ALWAYS DETECTED
-const executeUserCode = (code) => {
-    eval(code);  // ← Sẽ detect
-};
+// 3. Direct require('child_process') với string formatting
+require('child_process').exec('rm ' + userInput);
 
-// Example 4: Hardcoded credentials - DETECTED
-const dbConfig = {
-    password: "admin123"  // ← Detect: hardcoded password
-};
+// 4. Assignment to window (XSS)
+window['location'] = userInput;
 
-// Example 5: Command Injection - DETECTED
-const shellCommand = (filename) => {
-    const { exec } = require('child_process');
-    exec(`rm -rf /app/${filename}`);  // ← Detect
-};
-
+// 5. localStorage with user input
+localStorage.setItem('key', userInput);
 export default Game;
