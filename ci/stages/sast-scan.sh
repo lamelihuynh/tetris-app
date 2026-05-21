@@ -21,15 +21,20 @@ fi
 chmod +x "${TOOL_HOME}/bin/sonar-scanner"
 
 # 2. --- CÀI ĐẶT NODE.JS (ARM64) CHO JENKINS ---
+# Nâng cấp lên Node.js v22.11.0 LTS để chiều lòng SonarQube
+NODE_VERSION="v22.11.0"
 NODE_DIR="${TOOL_BASE_DIR}/nodejs"
+
 if [ ! -x "${NODE_DIR}/bin/node" ]; then
-    echo "[*] Node.js not found. Downloading Node.js for ARM64..."
-    curl -sSLo /tmp/nodejs.tar.gz https://nodejs.org/dist/v20.11.1/node-v20.11.1-linux-arm64.tar.gz
+    echo "[*] Node.js not found. Downloading Node.js ${NODE_VERSION} for ARM64..."
+    # Xoá thư mục cũ nếu có để cài bản mới
+    rm -rf "${NODE_DIR}"
     mkdir -p "${NODE_DIR}"
+    
+    curl -sSLo /tmp/nodejs.tar.gz "https://nodejs.org/dist/${NODE_VERSION}/node-${NODE_VERSION}-linux-arm64.tar.gz"
     tar -xzf /tmp/nodejs.tar.gz -C "${NODE_DIR}" --strip-components=1
 fi
 
-# Thêm Node.js vào biến môi trường PATH để Sonar Scanner có thể gọi được
 export PATH="${NODE_DIR}/bin:$PATH"
 
 echo "[*] Node.js version:"
@@ -45,11 +50,12 @@ fi
 
 echo "[*] Scanning $SCAN_TARGET"
 
+# Đã thêm sonar.exclusions và bỏ dòng report coverage
 "${TOOL_HOME}/bin/sonar-scanner" \
   -Dsonar.projectKey="devsecops-factory" \
   -Dsonar.sources="$SCAN_TARGET" \
+  -Dsonar.exclusions="**/node_modules/**,**/dist/**,**/build/**,**/.git/**" \
   -Dsonar.host.url="${SONAR_HOST}" \
   -Dsonar.login="${SONAR_TOKEN}" \
   -Dsonar.projectVersion="${IMAGE_TAG:-latest}" \
-  -Dsonar.scm.disabled=true \
-  -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
+  -Dsonar.scm.disabled=true
