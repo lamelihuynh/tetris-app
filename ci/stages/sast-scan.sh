@@ -52,6 +52,8 @@ fi
 echo "[*] Current directory is $(pwd)"
 
 # 4. --- CHẠY SCANNER TỪ BÊN TRONG THƯ MỤC CODE ---
+rm -rf .scannerwork/
+
 "${TOOL_HOME}/bin/sonar-scanner" \
   -Dsonar.projectKey="devsecops-factory" \
   -Dsonar.sources="." \

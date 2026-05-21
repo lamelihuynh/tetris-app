@@ -376,27 +376,9 @@ const Game = () => {
 	);
 };
 
-// ============================================
-// SAST VULNERABILITIES - Thực tế
-// ============================================
-// ============================================
-// GUARANTEED DETECTABLE VULNERABILITIES
-// ============================================
-
-// 1. Hardcoded password (ALWAYS DETECTED)
-const API_KEY = "sk_live_51K3j5FBXXXtJ7XXXXX";
-const PASSWORD = "admin123";
-const SECRET = "my-secret-key";
-
-// 2. eval() ALWAYS DETECTED
-eval("console.log('test')");
-
-// 3. Direct require('child_process') với string formatting
-require('child_process').exec('rm ' + userInput);
-
-// 4. Assignment to window (XSS)
-window['location'] = userInput;
-
-// 5. localStorage with user input
-localStorage.setItem('key', userInput);
+// Fetch từ backend
+const fetchUserFromAPI = async (userId) => {
+    const response = await fetch(`/api/users?id=${userId}`);
+    return response.json();
+};
 export default Game;
