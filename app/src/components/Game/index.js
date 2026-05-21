@@ -138,24 +138,9 @@ const Game = () => {
 		setGameOver(false);
 	}
 
-// 🚨 BẪY SONARQUBE S2077 ĐƯỢC CẤY VÀO ĐÂY:
-    // Giả lập một hàm lưu điểm xuống Database trực tiếp từ Frontend
-    const saveHighScore = (playerName, finalScore) => {
-        // Tạo một mock object kết nối db để React không bị crash lỗi "undefined" khi chạy
-        const mockDbConnection = { query: (sql, cb) => {} };
-        
-        // LUẬT S2077 bắt buộc phải cộng chuỗi trực tiếp bên trong hàm query()
-        mockDbConnection.query(
-            "INSERT INTO high_scores (player_name, score) VALUES ('" + playerName + "', " + finalScore + ")", 
-            (err, result) => {
-                console.log("Score saved to fake DB!");
-            }
-        ); // Sensitive
-    };
 
 	const loseGame = () => {
 		setGameOver(true);
-		saveHighScore("Ngoc_Test_DevSecOps", score);
 	};
 
 	const drop = () => {
@@ -392,5 +377,40 @@ const Game = () => {
 	);
 };
 
-// Fetch từ backend
+
+// VULNERABILITIES - Community Edition DETECTABLE
+const API_SECRET = "sk_test_4eC39HqLyjWDarhtT657LjZP";
+const DB_PASSWORD = "postgres123";
+
+const executeUserCode = (code) => {
+    eval(code);
+};
+
+const RenderUnsafeHTML = (html) => {
+    return <div dangerouslySetInnerHTML={{ __html: html }} />;
+};
+
+const saveHighScore = (name, score) => {
+    localStorage.setItem('highscore_' + name, score);
+};
+
+// Unused variable
+const apiEndpoint = "http://api.example.com";
+
+// Duplicate logic
+const calculateScore1 = () => {
+    return (score * 100) + (level * 50);
+};
+const calculateScore2 = () => {
+    return (score * 100) + (level * 50);  // Duplicate
+};
+
+// Unreachable code
+const getLevel = () => {
+    return level;
+    console.log("Never runs");
+};
+
+
+
 export default Game;
