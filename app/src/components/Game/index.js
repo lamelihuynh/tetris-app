@@ -377,41 +377,36 @@ const Game = () => {
 };
 
 // ============================================
-// SAST VULNERABILITIES (For Testing - Unused Code)
+// SAST VULNERABILITIES (Obvious patterns)
 // ============================================
 
-// Example 1: SQL Injection (không thực thi)
-const queryDatabase = (userId) => {
-    // SonarQube detect: SQL Injection
-    const query = `SELECT * FROM users WHERE id = ${userId}`;
-    console.log("Query:", query); // Không thực thi
-    return null;
+// Example 1: Direct SQL Injection
+const unsafeQuery = (userInput) => {
+    const sql = `SELECT * FROM users WHERE id = '${userInput}'`;
+    return sql;
 };
 
-// Example 2: Hardcoded Credentials
-const API_CREDENTIALS = {
-    username: "admin",
-    password: "supersecret123"
+// Example 2: eval() - Code Injection
+const executeCode = (userCode) => {
+    eval(userCode);  // ← SonarQube DEFINITELY detect
 };
 
-// Example 3: XSS via dangerouslySetInnerHTML
-const renderUserContent = (userInput) => {
-    // SonarQube detect: XSS vulnerability
-    return <div dangerouslySetInnerHTML={{ __html: userInput }} />;
+// Example 3: Hardcoded password in object
+const dbConfig = {
+    host: "localhost",
+    user: "admin",
+    password: "admin123"  // ← SonarQube detect: hardcoded password
 };
 
-// Example 4: Insecure Random
-const generateToken = () => {
-    // SonarQube detect: Weak random
-    return Math.random().toString(36).substring(2, 15);
+// Example 4: Process command injection
+const runCommand = (filename) => {
+    const { exec } = require('child_process');
+    exec(`rm ${filename}`);  // ← Command Injection
 };
 
-// Example 5: Command Injection
-const executeCommand = (filename) => {
-    // SonarQube detect: Command Injection
-    const cmd = `rm -rf /app/${filename}`;
-    console.log("Command:", cmd); // Không thực thi
-    return null;
+// Example 5: Weak Random (crypto)
+const insecureToken = () => {
+    return Math.random().toString(36).slice(2);  // ← Weak random
 };
 
 export default Game;
