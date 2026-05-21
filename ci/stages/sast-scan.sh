@@ -20,40 +20,41 @@ if [ ! -f "${TOOL_HOME}/bin/sonar-scanner" ]; then
 fi
 chmod +x "${TOOL_HOME}/bin/sonar-scanner"
 
-# 2. --- CÀI ĐẶT NODE.JS (ARM64) CHO JENKINS ---
-# Nâng cấp lên Node.js v22.11.0 LTS để chiều lòng SonarQube
+# 2. --- ÉP CÀI ĐẶT LẠI NODE.JS LÊN V22 CHO JENKINS ---
 NODE_VERSION="v22.11.0"
 NODE_DIR="${TOOL_BASE_DIR}/nodejs"
 
-if [ ! -x "${NODE_DIR}/bin/node" ]; then
-    echo "[*] Node.js not found. Downloading Node.js ${NODE_VERSION} for ARM64..."
-    # Xoá thư mục cũ nếu có để cài bản mới
-    rm -rf "${NODE_DIR}"
-    mkdir -p "${NODE_DIR}"
-    
-    curl -sSLo /tmp/nodejs.tar.gz "https://nodejs.org/dist/${NODE_VERSION}/node-${NODE_VERSION}-linux-arm64.tar.gz"
-    tar -xzf /tmp/nodejs.tar.gz -C "${NODE_DIR}" --strip-components=1
-fi
+echo "[*] Clearing old Node.js cache and installing Node.js ${NODE_VERSION}..."
+# Xóa thẳng tay thư mục cũ để ép tải bản mới
+rm -rf "${NODE_DIR}"
+mkdir -p "${NODE_DIR}"
+
+curl -sSLo /tmp/nodejs.tar.gz "https://nodejs.org/dist/${NODE_VERSION}/node-${NODE_VERSION}-linux-arm64.tar.gz"
+tar -xzf /tmp/nodejs.tar.gz -C "${NODE_DIR}" --strip-components=1
 
 export PATH="${NODE_DIR}/bin:$PATH"
 
 echo "[*] Node.js version:"
 node -v
 
-# 3. --- CHẠY SCAN ---
+# 3. --- CHUẨN BỊ QUÉT ---
 echo "[*] Running scan..."
 
 SCAN_TARGET="target-repo"
-if [ ! -d "$SCAN_TARGET" ]; then
-    SCAN_TARGET="."
+if [ -d "$SCAN_TARGET" ]; then
+    echo "[*] Navigating into $SCAN_TARGET"
+    # Di chuyển hẳn vào thư mục code để tránh lỗi path của bridge JS
+    cd "$SCAN_TARGET"
+else
+    echo "[!] target-repo not found, scanning current directory."
 fi
 
-echo "[*] Scanning $SCAN_TARGET"
+echo "[*] Current directory is $(pwd)"
 
-# Đã thêm sonar.exclusions và bỏ dòng report coverage
+# 4. --- CHẠY SCANNER TỪ BÊN TRONG THƯ MỤC CODE ---
 "${TOOL_HOME}/bin/sonar-scanner" \
   -Dsonar.projectKey="devsecops-factory" \
-  -Dsonar.sources="$SCAN_TARGET" \
+  -Dsonar.sources="." \
   -Dsonar.exclusions="**/node_modules/**,**/dist/**,**/build/**,**/.git/**" \
   -Dsonar.host.url="${SONAR_HOST}" \
   -Dsonar.login="${SONAR_TOKEN}" \
