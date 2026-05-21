@@ -138,8 +138,24 @@ const Game = () => {
 		setGameOver(false);
 	}
 
+// 🚨 BẪY SONARQUBE S2077 ĐƯỢC CẤY VÀO ĐÂY:
+    // Giả lập một hàm lưu điểm xuống Database trực tiếp từ Frontend
+    const saveHighScore = (playerName, finalScore) => {
+        // Tạo một mock object kết nối db để React không bị crash lỗi "undefined" khi chạy
+        const mockDbConnection = { query: (sql, cb) => {} };
+        
+        // LUẬT S2077 bắt buộc phải cộng chuỗi trực tiếp bên trong hàm query()
+        mockDbConnection.query(
+            "INSERT INTO high_scores (player_name, score) VALUES ('" + playerName + "', " + finalScore + ")", 
+            (err, result) => {
+                console.log("Score saved to fake DB!");
+            }
+        ); // Sensitive
+    };
+
 	const loseGame = () => {
 		setGameOver(true);
+		saveHighScore("Ngoc_Test_DevSecOps", score);
 	};
 
 	const drop = () => {
@@ -377,11 +393,4 @@ const Game = () => {
 };
 
 // Fetch từ backend
-const fetchUserFromAPI = async (userId) => {
-    const response = await fetch(`/api/users?id=${userId}`);
-    return response.json();
-	// SonarQube Community SẼ bắt được lỗi này
-	mycon.query('SELECT * FROM users WHERE id = ' + userinput); 
-
-};
 export default Game;
