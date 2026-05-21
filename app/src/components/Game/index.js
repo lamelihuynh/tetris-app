@@ -379,38 +379,41 @@ const Game = () => {
 
 
 
-// VULNERABILITIES - Community Edition DETECTABLE
 
-const executeUserCode = (code) => {
-    eval(code);  // ← S3523: eval() injection
-};
 
-const RenderUnsafeHTML = (html) => {
-    return <div dangerouslySetInnerHTML={{ __html: html }} />;  // ← XSS vulnerability
-};
-
-// Unused variable
-const apiEndpoint = "http://api.example.com";  // ← Never used
-
-// Duplicate logic - S1143
-const calculateScore1 = () => {
-    return (score * 100) + (level * 50);
-};
-
-const calculateScore2 = () => {
-    return (score * 100) + (level * 50);  // ← Duplicate code
-};
-
-// Unreachable code - S1128
+// Unreachable code - S1763
 const getLevel = () => {
     return level;
     console.log("Never runs");  // ← Unreachable
 };
 
-// Empty block - S108
-if (someCondition) {
-    // Empty
-}
+// ============================================
+// S2871 - Sort without compare function
+// ============================================
 
+// Noncompliant: Sort numbers without compare function
+const sortHighScores = (scores) => {
+    const numScores = [100, 20, 50, 10, 5];
+    numScores.sort();  // ← SonarQube S2871 DETECT
+    return numScores;
+};
+
+// Noncompliant: Sort array without compare
+const sortPlayerNames = () => {
+    const names = ["Alice", "bob", "Charlie", "alice"];
+    names.sort();  // ← SonarQube S2871 DETECT (không locale-aware)
+    return names;
+};
+
+// Noncompliant: Sort objects without compare
+const sortPlayers = (playerList) => {
+    const players = [
+        { name: "Alice", score: 100 },
+        { name: "Bob", score: 20 },
+        { name: "Charlie", score: 50 }
+    ];
+    players.sort();  // ← SonarQube S2871 DETECT
+    return players;
+};
 
 export default Game;
