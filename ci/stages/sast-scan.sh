@@ -56,7 +56,7 @@ rm -rf .scannerwork/
 
 "${TOOL_HOME}/bin/sonar-scanner" \
   -Dsonar.projectKey="devsecops-factory" \
-  -Dsonar.sources="." \
+  -Dsonar.sources="app/src,app/src/api" \
   -Dsonar.exclusions="**/node_modules/**,**/dist/**,**/build/**,**/.git/**" \
   -Dsonar.host.url="${SONAR_HOST}" \
   -Dsonar.login="${SONAR_TOKEN}" \
