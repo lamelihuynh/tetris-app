@@ -168,7 +168,7 @@ pipeline {
       }
     }
 
-    stage('9. IaC Scan (Checkov)') {
+    stage('6. IaC Scan (Checkov)') {
         steps {
             script {
                 echo "==== Running Infrastructure-as-Code Scan ===="
@@ -185,7 +185,7 @@ pipeline {
         }
     }
 
-    stage('6. Build Docker Image'){
+    stage('7. Build Docker Image'){
       steps{
         script {
           echo '==== Building Docker Image ==== ' 
@@ -214,7 +214,7 @@ pipeline {
             } 
         }
     }
-    stage('7. Push to Local Registry'){
+    stage('9. Push to Local Registry'){
       steps {
           script{
             echo " ==== Pushing image to local registry ===="
@@ -267,7 +267,7 @@ pipeline {
     //     }
     // }
 
-    stage('12. Final Summary') {
+    stage('10. Final Summary') {
         steps {
             script {
                 echo """
@@ -283,7 +283,7 @@ pipeline {
     }
   
 
-  stage('13. Deploy Staging (GitOps)'){
+  stage('11. Deploy Staging (GitOps)'){
     when {
       expression {
         env.GIT_BRANCH ==~ /origin\/main|main/ 
@@ -327,7 +327,7 @@ pipeline {
   }
 
 
-  stage ('14. Verify Staging'){
+  stage ('12. Verify Staging'){
     steps{
       script{
         echo "Waiting for staging pods to be ready..."
@@ -340,7 +340,7 @@ pipeline {
     }
   }
 
-  stage('15. Verify Production'){
+  stage('13. Verify Production'){
       steps{
         script{
           echo '==== Running DAST scan ===='
