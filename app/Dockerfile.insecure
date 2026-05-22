@@ -1,0 +1,19 @@
+# Example vulnerabilities
+FROM ubuntu:18.04
+
+RUN apt-get update && apt-get install -y curl openssh-server
+
+# Example 1: Old vulnerable packages
+RUN apt-get install -y openssl=1.1.0-1ubuntu2
+
+# Example 2: Run services as root
+RUN echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
+
+COPY . /app
+WORKDIR /app
+
+# Example 3: No health check
+# Example 4: Overly permissive file permissions
+RUN chmod 777 -R /app
+
+CMD ["/bin/bash"]
