@@ -174,7 +174,7 @@ pipeline {
           echo '==== Building Docker Image ==== ' 
           sh """
           set -e 
-          docker build -t ${env.IMAGE_NAME}:${env.IMAGE_TAG} -t ${env.IMAGE_NAME}:latest -f ./target-repo/Dockerfile ./target-repo
+          docker build -t ${env.IMAGE_NAME}:${env.IMAGE_TAG} -t ${env.IMAGE_NAME}:latest -f ./target-repo/app/Dockerfile ./target-repo/app
           echo "Build image ${env.IMAGE_NAME}:${env.IMAGE_TAG}"
           """
         }
