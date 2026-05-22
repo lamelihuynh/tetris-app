@@ -289,12 +289,7 @@ pipeline {
         env.GIT_BRANCH ==~ /origin\/main|main/ 
       }
     }
-    agent {
-      docker {
-        image 'line/kubectl-kustomize:latest'
-        reuseNode true
-      }
-    }
+
     steps{
       withCredentials([
         string(credentialsId: 'github-token', variable: 'GIT_TOKEN')
