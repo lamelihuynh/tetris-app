@@ -293,38 +293,37 @@ pipeline {
       withCredentials([
         string(credentialsId: 'github-token', variable: 'GIT_TOKEN')
       ]){
-        script{
-          sh '''
+      script {
           echo "[*] Installing Kustomize locally..."
-          curl -s "https://githubusercontent.com" | bash
-          KUSTOMIZE_BIN=$(pwd)/kustomize
-
-          rm -rf temp-infra-repo 
-
+          sh "curl -s 'https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh' | bash"
+          
+          def kustomizeBin = "${env.WORKSPACE}/kustomize"
+          
+          rm -rf temp-infra-repo
           echo "Cloning Infra Repository..."
-          git clone https://${GIT_TOKEN}@github.com/lamelihuynh/tetris-infra.git temp-infra-repo
-
-          cd temp-infra-repo
+          sh "git clone https://${GIT_TOKEN}@://github.com temp-infra-repo"
           
-          git config user.email "jenkins@localhost"
-          git config user.name "Jenkins CI"
-
-          cd kubernetes/overlays/staging
-
-          # Update version of the application 
-          echo "[*] Updating staging kustomization..."
-          kustomize edit set image tetris-devsecops=${IMAGE_URI}
-
-          cd ../../../
+          sh """
+              cd temp-infra-repo
+              git config user.email jenkins@localhost
+              git config user.name "Jenkins CI"
+              
+              cd kubernetes/overlays/staging
+              echo "[*] Updating staging kustomization..."
+              
+              ${kustomizeBin} edit set image tetris-devsecops=${IMAGE_URI}
+              
+              cd ../../../
+              git add kubernetes/overlays/staging/kustomization.yaml
+              git commit -m "Auto-deploy Staging: Update image to ${IMAGE_TAG}" || echo "No changes"
+              git push origin main || echo "Nothing to push"
+          """
           
-          git add kubernetes/overlays/staging/kustomization.yaml
-          git commit -m "Auto-deploy Staging: Update image to ${IMAGE_TAG}" || echo "No changes"
-          git push origin main || echo "Nothing to push"
           echo "Staging kustomization updated successfully in tetris-infra"
           echo "Waiting for ArgoCD to sync..."
           sleep 5
-          '''
-        }
+      }
+
       }
     }
   }
