@@ -15,8 +15,8 @@ RUN npm run build
 # ==========================================
 # STAGE 2: Deploy (Phục vụ file tĩnh bằng Nginx)
 # ==========================================
-FROM nginxinc/nginx-unprivileged:alpine
-
+# FROM nginxinc/nginx-unprivileged:alpine
+FROM nginx:1.18.0
 # Copy toàn bộ file tĩnh đã được build ở Stage 1 sang thư mục của Nginx
 COPY --from=builder /app/build /usr/share/nginx/html
 # Expose cổng 80 (cổng mặc định của web tĩnh)

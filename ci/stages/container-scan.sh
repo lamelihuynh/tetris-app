@@ -10,4 +10,19 @@ fi
 
 echo "[*] Starting scan for image: ${IMAGE_FULL_PATH}"
 
-trivy image --severity HIGH,CRITICAL --format table "${IMAGE_FULL_PATH}"
+mkdir -p scan-reports
+
+
+echo "[*] Generating JSON report..."
+trivy image \
+  --severity HIGH,CRITICAL \
+  --format json \
+  --output scan-reports/container-scan-report.json \
+  "${IMAGE_FULL_PATH}"
+
+
+echo "[*] Displaying vulnerabilities (Pipeline will fail if HIGH/CRITICAL are found)..."
+trivy image \
+  --severity HIGH,CRITICAL \
+  --format table \
+  "${IMAGE_FULL_PATH}"
