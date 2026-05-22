@@ -295,10 +295,8 @@ pipeline {
       ]){
         script{
           sh '''
-          echo "[*] Installing Kustomize locally..."
-          curl -s 'https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh' | bash
-          def kustomizeBin = "${env.WORKSPACE}/kustomize"
-
+          echo "[*] Downloading Kustomize..."
+          curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
           rm -rf temp-infra-repo 
 
           echo "Cloning Infra Repository..."
@@ -313,7 +311,7 @@ pipeline {
 
           # Update version of the application 
           echo "[*] Updating staging kustomization..."
-          ${kustomizeBin} edit set image tetris-devsecops=${IMAGE_URI}
+          kustomize edit set image tetris-devsecops=${IMAGE_URI}
 
           cd ../../../
           
