@@ -2,19 +2,17 @@
 // Jenkins File - DevSecOps Full Pipeline
 // ====================================================
 // 11-stage pipeline:
-// 1. Checkout source from GitHub -
-// 2. Prepare metadata (Git commit tag, build number) - 
-// 3. Secrets scan (Gitleaks, TruffleHog) - 
-// 4. SCA scan (OWASP Dependency-Check) - 
-// 5. SAST scan (SonarQube) - 
-// 6. Build Docker image - 
-// 7. Container scan (Trivy) - 
-// 8. IaC scan (Checkov on K8s manifests) - 
-// 9. Push image to AWS ECR
-// 10. Summary & reporting
-// 11. 
-// 12. DAST 
-// 13. Deploy 
+// 1. Checkout source from GitHub 
+// 2. Prepare metadata (Git commit tag, build number) 
+// 3. Secrets scan (Gitleaks) 
+// 4. SCA scan (Trivy)
+// 5. SAST scan (SonarQube) 
+// 6. IaC scan (Checkov )  
+// 7. Build Docker image 
+// 8. Container scan (Trivy) 
+// 9. Push image to Local Registry (change to ECR if deploy to Cloud)
+// 10. Summary and accept from administrator of Project
+// 11. Deploy via GitOps(ArgoCD)
 // ====================================================
 
 def     IMAGE_TAG = ""
@@ -147,26 +145,26 @@ pipeline {
     }
 
 
-    stage('5. SAST Scan (SonarQube)') {
-      steps {
-          script {
-              echo "==== Starting SAST scan (Static Analysis) ===="
-              withEnv([
-                  "SONAR_HOST=${env.SONAR_HOST}",
-                  "SCAN_DIR=${env.TARGET_DIR}",
-                  "IMAGE_TAG=${env.IMAGE_TAG}"
-              ]) {
-                  withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
-                      sh 'chmod +x ci/stages/sast-scan.sh && ./ci/stages/sast-scan.sh -Dsonar.sources=target-repo -Dsonar.scm.disabled=true' 
-                  }
-              }
-          }
-      }
-      post {
-          always {
-            echo "SAST Scan completed. Please check SonarQube Dashboard for the report."          }
-      }
-    }
+    // stage('5. SAST Scan (SonarQube)') {
+    //   steps {
+    //       script {
+    //           echo "==== Starting SAST scan (Static Analysis) ===="
+    //           withEnv([
+    //               "SONAR_HOST=${env.SONAR_HOST}",
+    //               "SCAN_DIR=${env.TARGET_DIR}",
+    //               "IMAGE_TAG=${env.IMAGE_TAG}"
+    //           ]) {
+    //               withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+    //                   sh 'chmod +x ci/stages/sast-scan.sh && ./ci/stages/sast-scan.sh -Dsonar.sources=target-repo -Dsonar.scm.disabled=true' 
+    //               }
+    //           }
+    //       }
+    //   }
+    //   post {
+    //       always {
+    //         echo "SAST Scan completed. Please check SonarQube Dashboard for the report."          }
+    //   }
+    // }
 
     stage('6. IaC Scan (Checkov)') {
         steps {
