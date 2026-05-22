@@ -295,6 +295,9 @@ pipeline {
       ]){
         script{
           sh '''
+          echo "[*] Installing Kustomize locally..."
+          curl -s "https://githubusercontent.com" | bash
+          KUSTOMIZE_BIN=$(pwd)/kustomize
 
           rm -rf temp-infra-repo 
 
