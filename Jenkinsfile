@@ -203,6 +203,7 @@ pipeline {
             script {
                 echo "==== Starting Container Security Scan ===="
                 withEnv(["IMAGE_FULL_PATH=${env.IMAGE_URI}", "SCAN_REPORT_DIR=${env.SCAN_REPORT_DIR}"]) {
+                    sh 'printenv'
                     sh 'chmod +x ./ci/stages/container-scan.sh && ./ci/stages/container-scan.sh'
                 }
             }
