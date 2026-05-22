@@ -289,14 +289,18 @@ pipeline {
         env.GIT_BRANCH ==~ /origin\/main|main/ 
       }
     }
+    agent {
+      docker {
+        image 'line/kubectl-kustomize:latest'
+        reuseNode true
+      }
+    }
     steps{
       withCredentials([
         string(credentialsId: 'github-token', variable: 'GIT_TOKEN')
       ]){
         script{
           sh '''
-          echo "[*] Downloading Kustomize..."
-          curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
           rm -rf temp-infra-repo 
 
           echo "Cloning Infra Repository..."
