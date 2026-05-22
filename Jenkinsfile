@@ -1,7 +1,7 @@
 // ====================================================
 // Jenkins File - DevSecOps Full Pipeline
 // ====================================================
-// 12-stage pipeline:
+// 11-stage pipeline:
 // 1. Checkout source from GitHub -
 // 2. Prepare metadata (Git commit tag, build number) - 
 // 3. Secrets scan (Gitleaks, TruffleHog) - 
@@ -85,105 +85,105 @@ pipeline {
       }
     }
 
-    // stage('3. Secrets Scan'){
-    //   when {
-    //     expression { fileExists('app/src')} 
-    //   }
-    //   steps {
-    //     script{
-    //       echo ' ===== Running secrets scan (Gitleaks).... ==== ' 
-    //       def scanStatus = sh (
-    //         script: '''
+    stage('3. Secrets Scan'){
+      when {
+        expression { fileExists('app/src')} 
+      }
+      steps {
+        script{
+          echo ' ===== Running secrets scan (Gitleaks).... ==== ' 
+          def scanStatus = sh (
+            script: '''
 
-    //           if ! command -v gitleaks &> /dev/null; then
-    //             echo [-] Gitleaks has not installed. The process will installe automated...
-    //             curl -sSL https://github.com/gitleaks/gitleaks/releases/download/v8.18.2/gitleaks_8.18.2_linux_x64.tar.gz | tar -xz 
-    //             chmod +x gitleaks
-    //             export PATH=$PATH:$(pwd)
-    //           fi
-    //           ./gitleaks protect detect --source . --report-path ${SCAN_REPORT_DIR}/gitleaks-report.json --report-format json
+              if ! command -v gitleaks &> /dev/null; then
+                echo [-] Gitleaks has not installed. The process will installe automated...
+                curl -sSL https://github.com/gitleaks/gitleaks/releases/download/v8.18.2/gitleaks_8.18.2_linux_x64.tar.gz | tar -xz 
+                chmod +x gitleaks
+                export PATH=$PATH:$(pwd)
+              fi
+              ./gitleaks protect detect --source . --report-path ${SCAN_REPORT_DIR}/gitleaks-report.json --report-format json
 
-    //         ''',
-    //         returnStatus: true
-    //       )
+            ''',
+            returnStatus: true
+          )
 
-    //       if (scanStatus == 1)  {
-    //         error("\033[31m [CRITICAL]: Hardcoded secrets detected by Gitleaks! Pipeline aborted. Please check file report for detail.")
-    //       }
-    //       else if (scanStatus != 0){
-    //         error("\033[33m [SYSTEM ERROR]: Cannot run Gitleaks (Exit code: ${scanStatus}). Pipeline aborted.")
-    //       }
-    //       else {
-    //         echo "\033[32m [PASS]: No secrets found. Code looks clean!"
-    //       }
-    //     }
-    //   }
-    //   post{
-    //     always{
-    //       archiveArtifacts artifacts: "${SCAN_REPORT_DIR}/gitleaks-report.json", allowEmptyArchive: true
-    //     }
-    //   }
-    // }
+          if (scanStatus == 1)  {
+            error("\033[31m [CRITICAL]: Hardcoded secrets detected by Gitleaks! Pipeline aborted. Please check file report for detail.")
+          }
+          else if (scanStatus != 0){
+            error("\033[33m [SYSTEM ERROR]: Cannot run Gitleaks (Exit code: ${scanStatus}). Pipeline aborted.")
+          }
+          else {
+            echo "\033[32m [PASS]: No secrets found. Code looks clean!"
+          }
+        }
+      }
+      post{
+        always{
+          archiveArtifacts artifacts: "${SCAN_REPORT_DIR}/gitleaks-report.json", allowEmptyArchive: true
+        }
+      }
+    }
 
-    // stage('4. SCA Scan'){
-    //   when { expression { fileExists('target-repo') } }
-    //   steps {
-    //       script {
-    //           echo "==== Starting SCA scan with Trivy ===="
-    //           sh """
-    //               chmod +x ci/stages/sca-scan.sh
-    //               SCAN_DIR="${env.TARGET_DIR}" \
-    //               SCAN_REPORT_DIR="${env.SCAN_REPORT_DIR}" \
-    //               ./ci/stages/sca-scan.sh
-    //           """
-    //           echo "==== SCA scan finished ===="
-    //       }
-    //   }
-    //   post { 
-    //       always { 
-    //           archiveArtifacts artifacts: "scan-reports/trivy-sca-report.*", allowEmptyArchive: true 
-    //       } 
-    //   }
-    // }
+    stage('4. SCA Scan'){
+      when { expression { fileExists('target-repo') } }
+      steps {
+          script {
+              echo "==== Starting SCA scan with Trivy ===="
+              sh """
+                  chmod +x ci/stages/sca-scan.sh
+                  SCAN_DIR="${env.TARGET_DIR}" \
+                  SCAN_REPORT_DIR="${env.SCAN_REPORT_DIR}" \
+                  ./ci/stages/sca-scan.sh
+              """
+              echo "==== SCA scan finished ===="
+          }
+      }
+      post { 
+          always { 
+              archiveArtifacts artifacts: "scan-reports/trivy-sca-report.*", allowEmptyArchive: true 
+          } 
+      }
+    }
 
 
-    // stage('5. SAST Scan (SonarQube)') {
-    //   steps {
-    //       script {
-    //           echo "==== Starting SAST scan (Static Analysis) ===="
-    //           withEnv([
-    //               "SONAR_HOST=${env.SONAR_HOST}",
-    //               "SCAN_DIR=${env.TARGET_DIR}",
-    //               "IMAGE_TAG=${env.IMAGE_TAG}"
-    //           ]) {
-    //               withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
-    //                   sh 'chmod +x ci/stages/sast-scan.sh && ./ci/stages/sast-scan.sh -Dsonar.sources=target-repo -Dsonar.scm.disabled=true' 
-    //               }
-    //           }
-    //       }
-    //   }
-    //   post {
-    //       always {
-    //         echo "SAST Scan completed. Please check SonarQube Dashboard for the report."          }
-    //   }
-    // }
+    stage('5. SAST Scan (SonarQube)') {
+      steps {
+          script {
+              echo "==== Starting SAST scan (Static Analysis) ===="
+              withEnv([
+                  "SONAR_HOST=${env.SONAR_HOST}",
+                  "SCAN_DIR=${env.TARGET_DIR}",
+                  "IMAGE_TAG=${env.IMAGE_TAG}"
+              ]) {
+                  withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                      sh 'chmod +x ci/stages/sast-scan.sh && ./ci/stages/sast-scan.sh -Dsonar.sources=target-repo -Dsonar.scm.disabled=true' 
+                  }
+              }
+          }
+      }
+      post {
+          always {
+            echo "SAST Scan completed. Please check SonarQube Dashboard for the report."          }
+      }
+    }
 
-    // stage('6. IaC Scan (Checkov)') {
-    //     steps {
-    //         script {
-    //             echo "==== Running Infrastructure-as-Code Scan ===="
-    //             sh """
-    //                 chmod +x ./ci/stages/iac-scan.sh
-    //                 ./ci/stages/iac-scan.sh .
-    //             """
-    //         }
-    //     }
-    //     post {
-    //         always {
-    //             archiveArtifacts artifacts: "checkov_report.json", allowEmptyArchive: true
-    //         }
-    //     }
-    // }
+    stage('6. IaC Scan (Checkov)') {
+        steps {
+            script {
+                echo "==== Running Infrastructure-as-Code Scan ===="
+                sh """
+                    chmod +x ./ci/stages/iac-scan.sh
+                    ./ci/stages/iac-scan.sh .
+                """
+            }
+        }
+        post {
+            always {
+                archiveArtifacts artifacts: "checkov_report.json", allowEmptyArchive: true
+            }
+        }
+    }
 
     stage('7. Build Docker Image'){
       steps{
@@ -198,22 +198,22 @@ pipeline {
       }
     }
 
-    // stage('8. Container Scan (Trivy)') {
-    //     steps {
-    //         script {
-    //             echo "==== Starting Container Security Scan ===="
-    //             withEnv(["IMAGE_FULL_PATH=${env.IMAGE_URI}", "SCAN_REPORT_DIR=${env.SCAN_REPORT_DIR}"]) {
-    //                 sh 'printenv'
-    //                 sh 'chmod +x ./ci/stages/container-scan.sh && ./ci/stages/container-scan.sh'
-    //             }
-    //         }
-    //     }
-    //     post { 
-    //         always { 
-    //             archiveArtifacts artifacts: "scan-reports/container-scan-report.json", allowEmptyArchive: true 
-    //         } 
-    //     }
-    // }
+    stage('8. Container Scan (Trivy)') {
+        steps {
+            script {
+                echo "==== Starting Container Security Scan ===="
+                withEnv(["IMAGE_FULL_PATH=${env.IMAGE_URI}", "SCAN_REPORT_DIR=${env.SCAN_REPORT_DIR}"]) {
+                    sh 'printenv'
+                    sh 'chmod +x ./ci/stages/container-scan.sh && ./ci/stages/container-scan.sh'
+                }
+            }
+        }
+        post { 
+            always { 
+                archiveArtifacts artifacts: "scan-reports/container-scan-report.json", allowEmptyArchive: true 
+            } 
+        }
+    }
     stage('9. Push to Local Registry'){
       steps {
           script{
@@ -230,43 +230,6 @@ pipeline {
 
       }
 
-
-
-
-
-
-    // stage('10. Run App for DAST') {
-    //     steps {
-    //         script {
-    //             echo "==== CLEANING UP PREVIOUS CONTAINERS ===="
-    //             sh "docker rm -f staging-app-local || true"
-                
-    //             echo "==== STARTING STAGING APPLICATION ===="
-    //             sh "docker run -d --name staging-app-local -p 8081:3000 ${env.IMAGE_URI}"
-                
-    //             echo "Waiting for application to initialize..."
-    //             sleep 15
-    //         }
-    //     }
-    // }
-
-    // stage('11. DAST Scan (ZAP)') {
-    //     steps {
-    //         script {
-    //             echo "==== Starting DAST scan (Web Attack) ===="
-    //             withEnv(["REPORT_DIR=${env.SCAN_REPORT_DIR}"]) {
-    //                 sh 'chmod +x ci/stages/dast-scan.sh && ./ci/stages/dast-scan.sh'
-    //             }
-    //         }
-    //     }
-    //     post {
-    //         always {
-    //             archiveArtifacts artifacts: "scan-reports/zap-report.*", allowEmptyArchive: true
-    //             sh "docker rm -f staging-app-local || true"
-    //         }
-    //     }
-    // }
-
     stage('10. Final Summary') {
         steps {
             script {
@@ -282,6 +245,26 @@ pipeline {
         }
     }
   
+
+  stage('10.5. Manager Approval for Production') {
+        when {
+            expression {
+                env.GIT_BRANCH ==~ /origin\/main|main/ 
+            }
+        }
+        steps {
+            script {
+                echo "==== WAITING FOR MANAGER APPROVAL ===="
+                // Jenkins sẽ tạm dừng tại đây và hiển thị nút bấm trên giao diện
+                def userInput = input(
+                    id: 'DeployApproval',
+                    message: "Báo cáo bảo mật đã sẵn sàng. Bạn có xác nhận Push Image ${env.IMAGE_TAG} lên Production (GitOps) không?",
+                    ok: 'Xác nhận Deploy'
+                )
+                echo "Quản lý đã phê duyệt! Đang tiến hành deploy..."
+            }
+        }
+    }
 
   stage('11. Deploy Staging (GitOps)'){
     when {
@@ -327,37 +310,6 @@ pipeline {
   }
 
 
-  stage ('12. Verify Staging'){
-    steps{
-      script{
-        echo "Waiting for staging pods to be ready..."
-        sh '''
-        kubectl get pods -n staging
-        kubectl rollout status deployment/tetris -n staging --timeout=5m
-        echo "Staging deployment ready"
-        '''
-      }
-    }
-  }
-
-  stage('13. Verify Production'){
-      steps{
-        script{
-          echo '==== Running DAST scan ===='
-          sh '''
-          echo "Production state:"
-          kubectl get pods -n production 
-          kubectl rollout status deployment/tetris -n production --timeout=5m
-          '''
-        }
-      }
-
-      post {
-        always{
-          archiveArtifacts artifacts: "${SCAN_REPORT_DIR}/trivy-report.json", allowEmptyArchive:true
-        }
-      }
-    }
   }
 }
 
