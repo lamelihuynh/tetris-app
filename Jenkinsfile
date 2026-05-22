@@ -85,88 +85,88 @@ pipeline {
       }
     }
 
-    // stage('3. Secrets Scan'){
-    //   when {
-    //     expression { fileExists('app/src')} 
-    //   }
-    //   steps {
-    //     script{
-    //       echo ' ===== Running secrets scan (Gitleaks).... ==== ' 
-    //       def scanStatus = sh (
-    //         script: '''
+    stage('3. Secrets Scan'){
+      when {
+        expression { fileExists('app/src')} 
+      }
+      steps {
+        script{
+          echo ' ===== Running secrets scan (Gitleaks).... ==== ' 
+          def scanStatus = sh (
+            script: '''
 
-    //           if ! command -v gitleaks &> /dev/null; then
-    //             echo [-] Gitleaks has not installed. The process will installe automated...
-    //             curl -sSL https://github.com/gitleaks/gitleaks/releases/download/v8.18.2/gitleaks_8.18.2_linux_x64.tar.gz | tar -xz 
-    //             chmod +x gitleaks
-    //             export PATH=$PATH:$(pwd)
-    //           fi
-    //           ./gitleaks protect detect --source . --report-path ${SCAN_REPORT_DIR}/gitleaks-report.json --report-format json
+              if ! command -v gitleaks &> /dev/null; then
+                echo [-] Gitleaks has not installed. The process will installe automated...
+                curl -sSL https://github.com/gitleaks/gitleaks/releases/download/v8.18.2/gitleaks_8.18.2_linux_x64.tar.gz | tar -xz 
+                chmod +x gitleaks
+                export PATH=$PATH:$(pwd)
+              fi
+              ./gitleaks protect detect --source . --report-path ${SCAN_REPORT_DIR}/gitleaks-report.json --report-format json
 
-    //         ''',
-    //         returnStatus: true
-    //       )
+            ''',
+            returnStatus: true
+          )
 
-    //       if (scanStatus == 1)  {
-    //         error("\033[31m [CRITICAL]: Hardcoded secrets detected by Gitleaks! Pipeline aborted. Please check file report for detail.")
-    //       }
-    //       else if (scanStatus != 0){
-    //         error("\033[33m [SYSTEM ERROR]: Cannot run Gitleaks (Exit code: ${scanStatus}). Pipeline aborted.")
-    //       }
-    //       else {
-    //         echo "\033[32m [PASS]: No secrets found. Code looks clean!"
-    //       }
-    //     }
-    //   }
-    //   post{
-    //     always{
-    //       archiveArtifacts artifacts: "${SCAN_REPORT_DIR}/gitleaks-report.json", allowEmptyArchive: true
-    //     }
-    //   }
-    // }
+          if (scanStatus == 1)  {
+            error("\033[31m [CRITICAL]: Hardcoded secrets detected by Gitleaks! Pipeline aborted. Please check file report for detail.")
+          }
+          else if (scanStatus != 0){
+            error("\033[33m [SYSTEM ERROR]: Cannot run Gitleaks (Exit code: ${scanStatus}). Pipeline aborted.")
+          }
+          else {
+            echo "\033[32m [PASS]: No secrets found. Code looks clean!"
+          }
+        }
+      }
+      post{
+        always{
+          archiveArtifacts artifacts: "${SCAN_REPORT_DIR}/gitleaks-report.json", allowEmptyArchive: true
+        }
+      }
+    }
 
-    // stage('4. SCA Scan'){
-    //   when { expression { fileExists('target-repo') } }
-    //   steps {
-    //       script {
-    //           echo "==== Starting SCA scan with Trivy ===="
-    //           sh """
-    //               chmod +x ci/stages/sca-scan.sh
-    //               SCAN_DIR="${env.TARGET_DIR}" \
-    //               SCAN_REPORT_DIR="${env.SCAN_REPORT_DIR}" \
-    //               ./ci/stages/sca-scan.sh
-    //           """
-    //           echo "==== SCA scan finished ===="
-    //       }
-    //   }
-    //   post { 
-    //       always { 
-    //           archiveArtifacts artifacts: "scan-reports/trivy-sca-report.*", allowEmptyArchive: true 
-    //       } 
-    //   }
-    // }
+    stage('4. SCA Scan'){
+      when { expression { fileExists('target-repo') } }
+      steps {
+          script {
+              echo "==== Starting SCA scan with Trivy ===="
+              sh """
+                  chmod +x ci/stages/sca-scan.sh
+                  SCAN_DIR="${env.TARGET_DIR}" \
+                  SCAN_REPORT_DIR="${env.SCAN_REPORT_DIR}" \
+                  ./ci/stages/sca-scan.sh
+              """
+              echo "==== SCA scan finished ===="
+          }
+      }
+      post { 
+          always { 
+              archiveArtifacts artifacts: "scan-reports/trivy-sca-report.*", allowEmptyArchive: true 
+          } 
+      }
+    }
 
 
-    // stage('5. SAST Scan (SonarQube)') {
-    //   steps {
-    //       script {
-    //           echo "==== Starting SAST scan (Static Analysis) ===="
-    //           withEnv([
-    //               "SONAR_HOST=${env.SONAR_HOST}",
-    //               "SCAN_DIR=${env.TARGET_DIR}",
-    //               "IMAGE_TAG=${env.IMAGE_TAG}"
-    //           ]) {
-    //               withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
-    //                   sh 'chmod +x ci/stages/sast-scan.sh && ./ci/stages/sast-scan.sh -Dsonar.sources=target-repo -Dsonar.scm.disabled=true' 
-    //               }
-    //           }
-    //       }
-    //   }
-    //   post {
-    //       always {
-    //         echo "SAST Scan completed. Please check SonarQube Dashboard for the report."          }
-    //   }
-    // }
+    stage('5. SAST Scan (SonarQube)') {
+      steps {
+          script {
+              echo "==== Starting SAST scan (Static Analysis) ===="
+              withEnv([
+                  "SONAR_HOST=${env.SONAR_HOST}",
+                  "SCAN_DIR=${env.TARGET_DIR}",
+                  "IMAGE_TAG=${env.IMAGE_TAG}"
+              ]) {
+                  withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                      sh 'chmod +x ci/stages/sast-scan.sh && ./ci/stages/sast-scan.sh -Dsonar.sources=target-repo -Dsonar.scm.disabled=true' 
+                  }
+              }
+          }
+      }
+      post {
+          always {
+            echo "SAST Scan completed. Please check SonarQube Dashboard for the report."          }
+      }
+    }
 
     stage('9. IaC Scan (Checkov)') {
         steps {
