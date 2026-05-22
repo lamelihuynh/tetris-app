@@ -168,6 +168,23 @@ pipeline {
     //   }
     // }
 
+    stage('9. IaC Scan (Checkov)') {
+        steps {
+            script {
+                echo "==== Running Infrastructure-as-Code Scan ===="
+                sh """
+                    chmod +x ./ci/stages/iac-scan.sh
+                    ./ci/stages/iac-scan.sh ./target-repo
+                """
+            }
+        }
+        post {
+            always {
+                archiveArtifacts artifacts: "checkov_report.json", allowEmptyArchive: true
+            }
+        }
+    }
+
     stage('6. Build Docker Image'){
       steps{
         script {
@@ -180,23 +197,6 @@ pipeline {
         }
       }
     }
-
-    stage('7. Push to Local Registry'){
-      steps {
-          script{
-            echo " ==== Pushing image to local registry ===="
-            sh """
-            docker push ${env.IMAGE_NAME}:${env.IMAGE_TAG}
-            docker push ${env.IMAGE_NAME}:latest
-
-            echo "\\033[32m[Success] - Pushed to : ${env.IMAGE_NAME}:${env.IMAGE_TAG}"
-            echo "\\033[32m[Success] - Also tagged as : ${env.IMAGE_NAME}:latest"           
-            """
-          }
-        }
-
-      }
-
 
     stage('8. Container Scan (Trivy)') {
         steps {
@@ -214,23 +214,25 @@ pipeline {
             } 
         }
     }
+    stage('7. Push to Local Registry'){
+      steps {
+          script{
+            echo " ==== Pushing image to local registry ===="
+            sh """
+            docker push ${env.IMAGE_NAME}:${env.IMAGE_TAG}
+            docker push ${env.IMAGE_NAME}:latest
 
-    stage('9. IaC Scan (Checkov)') {
-        steps {
-            script {
-                echo "==== Running Infrastructure-as-Code Scan ===="
-                sh """
-                    chmod +x ./ci/stages/iac-scan.sh
-                    ./ci/stages/iac-scan.sh ./target-repo
-                """
-            }
+            echo "\\033[32m[Success] - Pushed to : ${env.IMAGE_NAME}:${env.IMAGE_TAG}"
+            echo "\\033[32m[Success] - Also tagged as : ${env.IMAGE_NAME}:latest"           
+            """
+          }
         }
-        post {
-            always {
-                archiveArtifacts artifacts: "checkov_report.json", allowEmptyArchive: true
-            }
-        }
-    }
+
+      }
+
+
+
+
 
 
     // stage('10. Run App for DAST') {

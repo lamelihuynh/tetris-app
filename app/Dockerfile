@@ -1,26 +1,31 @@
 # ==========================================
-# STAGE 1: Build (Biên dịch code React)
+# STAGE 1: Build (Compile code React)
 # ==========================================
 FROM node:16 AS builder
+
 WORKDIR /app
 
-# Copy và cài đặt dependencies
+# Copy and install dependencies
 COPY package*.json ./
 RUN npm install
 
-# Copy source code và tiến hành build
+# Copy source code and begin build
 COPY . .
 RUN npm run build
 
 # ==========================================
-# STAGE 2: Deploy (Phục vụ file tĩnh bằng Nginx)
+# STAGE 2: Deploy (Service for staitic file  by Nginx)
 # ==========================================
+
+
 FROM nginxinc/nginx-unprivileged:alpine
-# FROM nginx:1.18.0
-# Copy toàn bộ file tĩnh đã được build ở Stage 1 sang thư mục của Nginx
+# FROM nginx:1.18.0 // for Raise container scan error, if use slash above line and unslash this line
+
+
+# Copy all static file has build in Stage 1 to folder of Nginx
 COPY --from=builder /app/build /usr/share/nginx/html
-# Expose cổng 80 (cổng mặc định của web tĩnh)
+# Expose port 80 (default port of static web )
 EXPOSE 8080
 
-# Chạy Nginx ở chế độ background
+# Run Nginx on background mode
 CMD ["nginx", "-g", "daemon off;"]
