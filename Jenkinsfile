@@ -174,7 +174,7 @@ pipeline {
                 echo "==== Running Infrastructure-as-Code Scan ===="
                 sh """
                     chmod +x ./ci/stages/iac-scan.sh
-                    ./ci/stages/iac-scan.sh ./target-repo
+                    ./ci/stages/iac-scan.sh .
                 """
             }
         }
@@ -191,7 +191,7 @@ pipeline {
           echo '==== Building Docker Image ==== ' 
           sh """
           set -e 
-          docker build -t ${env.IMAGE_NAME}:${env.IMAGE_TAG} -t ${env.IMAGE_NAME}:latest -f ./target-repo/app/Dockerfile ./target-repo/app
+          docker build -t ${env.IMAGE_NAME}:${env.IMAGE_TAG} -t ${env.IMAGE_NAME}:latest -f ./app/Dockerfile ./app
           echo "Build image ${env.IMAGE_NAME}:${env.IMAGE_TAG}"
           """
         }

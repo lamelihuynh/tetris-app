@@ -1,41 +1,41 @@
-#!/usr/bin/env bash
-set -euo pipefail
-
+#!/bin/bash
 echo "============================================================"
-echo "  IaC SCAN — Checkov (Optimized & Non-blocking)"
+echo "  IaC SCAN — Checkov"
 echo "============================================================"
 
-# Lấy thư mục từ tham số truyền vào (mặc định là ./target-repo nếu không truyền)
-TARGET_DIR=${1:-"./target-repo"}
+docker rm -f checkov-data 2>/dev/null || true
 
-echo "[*] Target directory: ${TARGET_DIR}"
-echo "[*] Scanning for Dockerfile, Kubernetes, Terraform, Helm, etc..."
+echo "[*] Creating temporary storage container..."
+docker create -v /tf --name checkov-data alpine:latest /bin/true
 
-# Tạo thư mục chứa report nếu chưa có
-mkdir -p scan-reports
+echo "[*] Copying target repository..."
+docker cp ./target-repo checkov-data:/tf/
 
-# TỐI ƯU HÓA:
-# 1. Dùng '-v $(pwd):/work' để mount trực tiếp code vào container (nhanh gấp nhiều lần docker cp).
-# 2. Dùng '--soft-fail' để KHÔNG bẻ gãy pipeline (Exit code luôn là 0).
-# 3. Xuất ra 2 định dạng cùng lúc (cli cho console, json cho artifact).
+echo "[*] Running Checkov Scan (Console Output)..."
 docker run --rm \
-    -v "$(pwd):/work" \
-    -w /work \
+    --volumes-from checkov-data \
     bridgecrew/checkov:latest \
-    --directory "${TARGET_DIR}" \
+    --directory /tf/target-repo \
     --soft-fail \
-    --output cli \
-    --output json \
-    --output-file-path console,scan-reports/checkov_report.json
+    --quiet
 
-echo "[*] Scan complete. Output saved to scan-reports/checkov_report.json"
+echo "[*] Generating JSON report..."
+docker run --rm \
+    --volumes-from checkov-data \
+    bridgecrew/checkov:latest \
+    --directory /tf/target-repo \
+    --soft-fail \
+    --output json > checkov_report.json
 
-# Kiểm tra xem file report có được tạo ra thành công không
-if [ -s scan-reports/checkov_report.json ]; then
+echo "[*] Cleaning up temporary resources..."
+docker rm -v checkov-data >/dev/null
+
+if [ -s checkov_report.json ]; then
     echo "============================================================"
-    echo "[+] Report Summary:"
-    grep -E "\"passed\"|\"failed\"|\"resource_count\"" scan-reports/checkov_report.json | head -n 5 || true
+    echo "[+] IaC Scan completed successfully."
+    grep -E "passed|failed|resource_count" checkov_report.json | head -n 5
     echo "============================================================"
 else
-    echo "[!] Warning: Report JSON file was not generated."
+    echo "[!] Error: Report file was not generated."
+    exit 1
 fi
