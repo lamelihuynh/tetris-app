@@ -379,8 +379,6 @@ const Game = () => {
 
 
 
-
-
 // Unreachable code - S1763
 const getLevel = () => {
     return level;
