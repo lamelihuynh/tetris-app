@@ -19,8 +19,7 @@ RUN npm run build
 
 
 # FROM nginxinc/nginx-unprivileged:alpine
-FROM nginx:1.18.0 // for Raise container scan error, if use slash above line and unslash this line
-
+FROM nginx:1.18.0 
 
 # Copy all static file has build in Stage 1 to folder of Nginx
 COPY --from=builder /app/build /usr/share/nginx/html
