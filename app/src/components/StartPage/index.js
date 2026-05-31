@@ -5,7 +5,7 @@ const StyledStartPage = styled.div`
 	width: 100vw;
 	height: 100vh;
 	overflow: hidden;
-	background-color: #c5e305;
+	background-color: #e30505;
 `;
 
 const StartButton = styled.button`
