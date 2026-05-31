@@ -18,8 +18,8 @@ RUN npm run build
 # ==========================================
 
 
-# FROM nginxinc/nginx-unprivileged:alpine
-FROM nginx:1.18.0 
+FROM nginxinc/nginx-unprivileged:alpine
+# FROM nginx:1.18.0 
 
 # Copy all static file has build in Stage 1 to folder of Nginx
 COPY --from=builder /app/build /usr/share/nginx/html
