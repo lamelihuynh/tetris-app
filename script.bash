@@ -1,7 +1,7 @@
 rm -rf Jenkinsfile
-cp /Users/huynhnhatlinh0305/Downloads/devsecops-factory/ci/Jenkinsfile ./ 
+cp /Users/huynhnhatlinh0305/Desktop/CICD-DevSecOps-using-AWS-services ./ 
 rm -rf ci/stages
-cp -rf  /Users/huynhnhatlinh0305/Downloads/devsecops-factory/ci/stages ./ci/
+cp -rf  /Users/huynhnhatlinh0305/Desktop/CICD-DevSecOps-using-AWS-services/ci/stages ./ci/
 echo "// new feature" >> app/src/App.js
 git add . 
 COMMIT_ID=$(cat counter.txt) 
