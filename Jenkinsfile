@@ -31,9 +31,16 @@ pipeline {
   environment{
     AWS_REGION = "ap-southeast-2"
     APP_NAME = "tetris"
-    ENVIRONMENT_NAME = "staging" 
+    ENVIRONMENT_NAME = "staging-local-k8s" 
     SECURITY_REPORT_BUCKET = "devsecops-security-reports-3997-0782-6507"
-    STAGING_URL = "H"
+
+    RAW_REPORT_DIR = "${WORKSPACE}/scan-reports/raw"
+    NORMALIZED_REPORT_DIR = "${WORKSPACE}/scan-reports/normalized"
+    ASFF_REPORT_DIR = "${WORKSPACE}/scan-reports/asff"
+    SUMMARY_REPORT_DIR = "${WORKSPACE}/scan-reports/summary"
+
+
+    STAGING_URL = "http://host.docker.internal:30080"
 
 
 
@@ -87,70 +94,76 @@ pipeline {
           echo "Image TAG: ${env.IMAGE_TAG}"
           echo "Image URI: ${env.IMAGE_URI}"
           echo "Report directory: ${env.SCAN_REPORT_DIR}" 
+          sh '''
+          mkdir -p "${RAW_REPORT_DIR}"
+          mkdir -p "${NORMALIZED_REPORT_DIR}"
+          mkdir -p "${ASFF_REPORT_DIR}"
+          mkdir -p "${SUMMARY_REPORT_DIR}"
+          '''
         }
       }
     }
 
-    // stage('3. Secrets Scan'){
-    //   when {
-    //     expression { fileExists('app/src')} 
-    //   }
-    //   steps {
-    //     script{
-    //       echo ' ===== Running secrets scan (Gitleaks).... ==== ' 
-    //       def scanStatus = sh (
-    //         script: '''
+    stage('3. Secrets Scan'){
+      when {
+        expression { fileExists('app/src')} 
+      }
+      steps {
+        script{
+          echo ' ===== Running secrets scan (Gitleaks).... ==== ' 
+          def scanStatus = sh (
+            script: '''
 
-    //           if ! command -v gitleaks &> /dev/null; then
-    //             echo [-] Gitleaks has not installed. The process will installe automated...
-    //             curl -sSL https://github.com/gitleaks/gitleaks/releases/download/v8.18.2/gitleaks_8.18.2_linux_x64.tar.gz | tar -xz 
-    //             chmod +x gitleaks
-    //             export PATH=$PATH:$(pwd)
-    //           fi
-    //           ./gitleaks protect detect --source . --report-path ${SCAN_REPORT_DIR}/gitleaks-report.json --report-format json
+              if ! command -v gitleaks &> /dev/null; then
+                echo [-] Gitleaks has not installed. The process will installe automated...
+                curl -sSL https://github.com/gitleaks/gitleaks/releases/download/v8.18.2/gitleaks_8.18.2_linux_x64.tar.gz | tar -xz 
+                chmod +x gitleaks
+                export PATH=$PATH:$(pwd)
+              fi
+              ./gitleaks protect detect --source . --report-path ${SCAN_REPORT_DIR}/gitleaks-report.json --report-format json
 
-    //         ''',
-    //         returnStatus: true
-    //       )
+            ''',
+            returnStatus: true
+          )
 
-    //       if (scanStatus == 1)  {
-    //         error("\033[31m [CRITICAL]: Hardcoded secrets detected by Gitleaks! Pipeline aborted. Please check file report for detail.")
-    //       }
-    //       else if (scanStatus != 0){
-    //         error("\033[33m [SYSTEM ERROR]: Cannot run Gitleaks (Exit code: ${scanStatus}). Pipeline aborted.")
-    //       }
-    //       else {
-    //         echo "\033[32m [PASS]: No secrets found. Code looks clean!"
-    //       }
-    //     }
-    //   }
-    //   post{
-    //     always{
-    //       archiveArtifacts artifacts: "${SCAN_REPORT_DIR}/gitleaks-report.json", allowEmptyArchive: true
-    //     }
-    //   }
-    // }
+          if (scanStatus == 1)  {
+            error("\033[31m [CRITICAL]: Hardcoded secrets detected by Gitleaks! Pipeline aborted. Please check file report for detail.")
+          }
+          else if (scanStatus != 0){
+            error("\033[33m [SYSTEM ERROR]: Cannot run Gitleaks (Exit code: ${scanStatus}). Pipeline aborted.")
+          }
+          else {
+            echo "\033[32m [PASS]: No secrets found. Code looks clean!"
+          }
+        }
+      }
+      post{
+        always{
+          archiveArtifacts artifacts: "${SCAN_REPORT_DIR}/gitleaks-report.json", allowEmptyArchive: true
+        }
+      }
+    }
 
-    // stage('4. SCA Scan'){
-    //   when { expression { fileExists('target-repo') } }
-    //   steps {
-    //       script {
-    //           echo "==== Starting SCA scan with Trivy ===="
-    //           sh """
-    //               chmod +x ci/stages/sca-scan.sh
-    //               SCAN_DIR="${env.TARGET_DIR}" \
-    //               SCAN_REPORT_DIR="${env.SCAN_REPORT_DIR}" \
-    //               ./ci/stages/sca-scan.sh
-    //           """
-    //           echo "==== SCA scan finished ===="
-    //       }
-    //   }
-    //   post { 
-    //       always { 
-    //           archiveArtifacts artifacts: "scan-reports/trivy-sca-report.*", allowEmptyArchive: true 
-    //       } 
-    //   }
-    // }
+    stage('4. SCA Scan'){
+      when { expression { fileExists('target-repo') } }
+      steps {
+          script {
+              echo "==== Starting SCA scan with Trivy ===="
+              sh """
+                  chmod +x ci/stages/sca-scan.sh
+                  SCAN_DIR="${env.TARGET_DIR}" \
+                  SCAN_REPORT_DIR="${env.SCAN_REPORT_DIR}" \
+                  ./ci/stages/sca-scan.sh
+              """
+              echo "==== SCA scan finished ===="
+          }
+      }
+      post { 
+          always { 
+              archiveArtifacts artifacts: "scan-reports/trivy-sca-report.*", allowEmptyArchive: true 
+          } 
+      }
+    }
 
 
     // stage('5. SAST Scan (SonarQube)') {
@@ -174,22 +187,22 @@ pipeline {
     //   }
     // }
 
-    // stage('6. IaC Scan (Checkov)') {
-    //     steps {
-    //         script {
-    //             echo "==== Running Infrastructure-as-Code Scan ===="
-    //             sh """
-    //                 chmod +x ./ci/stages/iac-scan.sh
-    //                 ./ci/stages/iac-scan.sh .
-    //             """
-    //         }
-    //     }
-    //     post {
-    //         always {
-    //             archiveArtifacts artifacts: "checkov_report.json", allowEmptyArchive: true
-    //         }
-    //     }
-    // }
+    stage('6. IaC Scan (Checkov)') {
+        steps {
+            script {
+                echo "==== Running Infrastructure-as-Code Scan ===="
+                sh """
+                    chmod +x ./ci/stages/iac-scan.sh
+                    ./ci/stages/iac-scan.sh .
+                """
+            }
+        }
+        post {
+            always {
+                archiveArtifacts artifacts: "checkov_report.json", allowEmptyArchive: true
+            }
+        }
+    }
 
     stage('7. Build Docker Image'){
       steps{
@@ -204,22 +217,23 @@ pipeline {
       }
     }
 
-    // stage('8. Container Scan (Trivy)') {
-    //     steps {
-    //         script {
-    //             echo "==== Starting Container Security Scan ===="
-    //             withEnv(["IMAGE_FULL_PATH=${env.IMAGE_URI}", "SCAN_REPORT_DIR=${env.SCAN_REPORT_DIR}"]) {
-    //                 sh 'printenv'
-    //                 sh 'chmod +x ./ci/stages/container-scan.sh && ./ci/stages/container-scan.sh'
-    //             }
-    //         }
-    //     }
-    //     post { 
-    //         always { 
-    //             archiveArtifacts artifacts: "scan-reports/container-scan-report.json", allowEmptyArchive: true 
-    //         } 
-    //     }
-    // }
+    stage('8. Container Scan (Trivy)') {
+        steps {
+            script {
+                echo "==== Starting Container Security Scan ===="
+                withEnv(["IMAGE_FULL_PATH=${env.IMAGE_URI}", "SCAN_REPORT_DIR=${env.SCAN_REPORT_DIR}"]) {
+                    sh 'printenv'
+                    sh 'chmod +x ./ci/stages/container-scan.sh && ./ci/stages/container-scan.sh'
+                }
+            }
+        }
+        post { 
+            always { 
+                archiveArtifacts artifacts: "scan-reports/container-scan-report.json", allowEmptyArchive: true 
+            } 
+        }
+    }
+    
     stage('9. Push to Local Registry'){
       steps {
           script{
@@ -315,23 +329,79 @@ pipeline {
     }
   }
 
-  // stage('13. DAST Scan - OWASP ZAP') {
-  //   steps {
-  //     '''
-  //       chmod +x ci/stages/dast-scan.sh
-  //       TARGET_URL="${STAGING_URL}" \
-  //       REPORT_DIR="${SCAN_REPORT_DIR}/dast"
-  //       REPORT_DIR="{SCAN_REPORT_DIR}/dast" \
-  //       ./ci/stages/dast-scan.sh
-  //     '''
-  //   }
-  // }
+  stage('12. Wait for Local K8s Stagin'){
+    steps{
+      sh '''
+        curl -fsS --retry 20 --retry-delay 5 --retry-all-errors "${STAGING_URL}"
+      '''
+    }
+
+ 
+  }
+  stage('13. DAST Scan - OWASP ZAP') {
+    steps {
+      sh '''
+        chmod +x ci/stages/dast-scan.sh
+        TARGET_URL="${STAGING_URL}" \
+        REPORT_DIR="${RAW_REPORT_DIR}/dast" \
+        ./ci/stages/dast-scan.sh
+      '''
+    }
+  }
+
+
+  stage('14. Normalize Security Reports') {
+  steps {
+    sh '''
+      python3 ci/stages/normalize-reports.py \
+        --raw-dir "${RAW_REPORT_DIR}" \
+        --out "${NORMALIZED_REPORT_DIR}/findings-normalized.json" \
+        --summary "${SUMMARY_REPORT_DIR}/security-summary.json" \
+        --app "${APP_NAME}" \
+        --env "${ENVIRONMENT_NAME}" \
+        --commit "${GIT_COMMIT_SHORT}" \
+        --build "${BUILD_NUMBER}"
+    '''
+  }
+  }
+
+
+  stage('15. Generate ASFF'){
+    steps{
+      sh '''
+      python3 ci/stages/generate-asff.py \
+        --input "${NORMALIZED_REPORT_DIR}/findings-normalized.json" \
+        --out "${ASFF_REPORT_DIR}/securityhub-asff.json" \
+        --region "${AWS_REGION}" \
+        --account-id "399707826507"
+      '''
+    }
+  }
+
+
+  stage('16. Upload Reports to S3') {
+    steps{
+      withCredentials(
+        [
+          string(credentialsId: 'aws-access-key-id', variable: 'AWS_ACCESS_KEY_ID'),
+          string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY'),
+        ]
+      ){
+        sh '''
+        S3_PREFIX="apps/${APP_NAME}/env/${ENVIRONMENT_NAME}/pipeline/${BUILD_NUMBER}/commit/${GIT_COMMIT_SHORT}"
+                aws s3 cp scan-reports \
+          "s3://${SECURITY_REPORT_BUCKET}/${S3_PREFIX}/" \
+          --recursive \
+          --region "${AWS_REGION}" \
+          --sse AES256
+        '''
+      }
+    }
+  }
 
 
   }
 }
-
-
 
 
 
