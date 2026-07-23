@@ -1,5 +1,5 @@
 rm -rf Jenkinsfile
-cp /Users/huynhnhatlinh0305/Desktop/CICD-DevSecOps-using-AWS-services ./ 
+cp /Users/huynhnhatlinh0305/Desktop/CICD-DevSecOps-using-AWS-services/ci/Jenkinsfile ./ 
 rm -rf ci/stages
 cp -rf  /Users/huynhnhatlinh0305/Desktop/CICD-DevSecOps-using-AWS-services/ci/stages ./ci/
 echo "// new feature" >> app/src/App.js
