@@ -325,7 +325,7 @@ pipeline {
   //       ./ci/stages/dast-scan.sh
   //     '''
   //   }
-  }
+  // }
 
 
   }
