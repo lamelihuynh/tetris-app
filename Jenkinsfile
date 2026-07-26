@@ -18,7 +18,7 @@
 def     IMAGE_TAG = ""
 def     IMAGE_URI = ""
 def     GIT_COMMIT_SHORT = ""
-def     STAGING_URL = "http://tetris-staging.example.com:30080"
+def     STAGING_URL = "http://host.docker.internal:3001"
 def     PROD_URL = "http://tetris.example.com:30080"
 
 pipeline {
