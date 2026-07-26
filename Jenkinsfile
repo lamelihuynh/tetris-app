@@ -40,7 +40,7 @@ pipeline {
     SUMMARY_REPORT_DIR = "${WORKSPACE}/scan-reports/summary"
 
 
-    STAGING_URL = "http://host.docker.internal:30080"
+    STAGING_URL = "http://host.docker.internal:3001"
 
 
 
