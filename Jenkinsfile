@@ -32,7 +32,7 @@ pipeline {
     AWS_REGION = "ap-southeast-2"
     APP_NAME = "tetris"
     ENVIRONMENT_NAME = "staging-local-k8s" 
-    SECURITY_REPORT_BUCKET = "devsecops-security-reports-3997-0782-6507"
+    SECURITY_REPORT_BUCKET = "devsecops-security-reports-399707826507"
 
     RAW_REPORT_DIR = "${WORKSPACE}/scan-reports/raw"
     NORMALIZED_REPORT_DIR = "${WORKSPACE}/scan-reports/normalized"
