@@ -410,22 +410,13 @@ pipeline {
     script {
       sh '''
         echo "======================================================"
-        echo "  CHECKING & INSTALLING BOTO3 VIA PYTHON DIRECTLY"
+        echo "  CHECKING & INSTALLING BOTO3"
         echo "======================================================"
         
-        # Kiểm tra xem boto3 đã có chưa
+        # Kiểm tra xem boto3 đã có chưa, nếu chưa có thì ép cài bằng flag --break-system-packages
         if ! python3 -c "import boto3" >/dev/null 2>&1; then
-          echo "[*] boto3 not found. Trying to install via built-in python module..."
-          
-          # Cách 1: Dùng module có sẵn của python để cài boto3
-          python3 -m pip install --no-cache-dir boto3 || \
-          python3 -m ensurepip --default-pip && python3 -m pip install --no-cache-dir boto3 || \
-          
-          # Cách 2: Nếu không có pip, tải script bootstrap độc lập của pip về cài boto3
-          (curl -sS https://pypa.io -o get-pip.py && python3 get-pip.py --user && python3 -m pip install --no-cache-dir boto3) || \
-          
-          # Cách 3: Dự phòng cuối cùng dùng apt-get không có sudo (do bạn là root)
-          (apt-get update -y && DEBIAN_FRONTEND=noninteractive apt-get install -y python3-pip && pip3 install --no-cache-dir boto3)
+          echo "[*] boto3 not found. Installing with system override..."
+          pip3 install --no-cache-dir --break-system-packages boto3
         else
           echo "[+] boto3 is already available."
         fi
@@ -495,11 +486,14 @@ PYTHON_SCRIPT
   }
 }
 
-}
-
-
   }
 }
+
+}
+
+
+  
+
 
 
 
