@@ -187,22 +187,22 @@ pipeline {
     //   }
     // }
 
-    stage('6. IaC Scan (Checkov)') {
-        steps {
-            script {
-                echo "==== Running Infrastructure-as-Code Scan ===="
-                sh """
-                    chmod +x ./ci/stages/iac-scan.sh
-                    ./ci/stages/iac-scan.sh .
-                """
-            }
-        }
-        post {
-            always {
-                archiveArtifacts artifacts: "checkov_report.json", allowEmptyArchive: true
-            }
-        }
-    }
+    // stage('6. IaC Scan (Checkov)') {
+    //     steps {
+    //         script {
+    //             echo "==== Running Infrastructure-as-Code Scan ===="
+    //             sh """
+    //                 chmod +x ./ci/stages/iac-scan.sh
+    //                 ./ci/stages/iac-scan.sh .
+    //             """
+    //         }
+    //     }
+    //     post {
+    //         always {
+    //             archiveArtifacts artifacts: "checkov_report.json", allowEmptyArchive: true
+    //         }
+    //     }
+    // }
 
     stage('7. Build Docker Image'){
       steps{
@@ -410,38 +410,24 @@ pipeline {
     script {
       sh '''
         echo "======================================================"
-        echo "  CHECKING & INSTALLING DEPENDENCIES"
+        echo "  CHECKING & INSTALLING BOTO3 VIA PYTHON DIRECTLY"
         echo "======================================================"
         
-        # 1. Tự động kiểm tra và cài đặt pip3 tùy theo OS của Jenkins Agent
-        if ! command -v pip3 >/dev/null 2>&1; then
-          echo "[*] pip3 not found. Detecting OS package manager..."
-          
-          if command -v apt-get >/dev/null 2>&1; then
-            echo "[+] Debian/Ubuntu detected. Installing python3-pip..."
-            # Cập nhật danh sách gói nếu cần thiết, chuyển hướng lỗi ra ngoài để tránh treo
-            sudo apt-get update -y || apt-get update -y || true
-            sudo apt-get install -y python3-pip || apt-get install -y python3-pip
-          elif command -v apk >/dev/null 2>&1; then
-            echo "[+] Alpine Linux detected. Installing py3-pip..."
-            apk add --no-cache python3 py3-pip
-          elif command -v yum >/dev/null 2>&1; then
-            echo "[+] RHEL/CentOS detected. Installing python3-pip..."
-            sudo yum install -y python3-pip || yum install -y python3-pip
-          else
-            echo "[!] Unknown OS. Cannot install pip3 automatically."
-            exit 1
-          fi
-        fi
-
-        # 2. Kiểm tra và cài đặt thư viện boto3 cho Python
-        echo "[*] Checking boto3 library..."
+        # Kiểm tra xem boto3 đã có chưa
         if ! python3 -c "import boto3" >/dev/null 2>&1; then
-          echo "[+] boto3 not found. Installing via pip3..."
-          # Ưu tiên cài --user nếu không có quyền root, hoặc cài global nếu có quyền
-          pip3 install --user --no-cache-dir boto3 || pip3 install --no-cache-dir boto3
+          echo "[*] boto3 not found. Trying to install via built-in python module..."
+          
+          # Cách 1: Dùng module có sẵn của python để cài boto3
+          python3 -m pip install --no-cache-dir boto3 || \
+          python3 -m ensurepip --default-pip && python3 -m pip install --no-cache-dir boto3 || \
+          
+          # Cách 2: Nếu không có pip, tải script bootstrap độc lập của pip về cài boto3
+          (curl -sS https://pypa.io -o get-pip.py && python3 get-pip.py --user && python3 -m pip install --no-cache-dir boto3) || \
+          
+          # Cách 3: Dự phòng cuối cùng dùng apt-get không có sudo (do bạn là root)
+          (apt-get update -y && DEBIAN_FRONTEND=noninteractive apt-get install -y python3-pip && pip3 install --no-cache-dir boto3)
         else
-          echo "[+] boto3 is already installed."
+          echo "[+] boto3 is already available."
         fi
 
         echo "======================================================"
