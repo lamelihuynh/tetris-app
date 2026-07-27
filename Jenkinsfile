@@ -403,38 +403,69 @@ pipeline {
 
   stage('17. Import Findings to AWS Security Hub') {
   steps {
-    withCredentials([
-      string(credentialsId: 'aws-access-key-id', variable: 'AWS_ACCESS_KEY_ID'),
-      string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY')
-    ]) {
-      script {
-        sh '''
-          echo "======================================================"
-          echo "  IMPORTING ASFF FINDINGS TO SECURITY HUB"
-          echo "======================================================"
+  withCredentials([
+    string(credentialsId: 'aws-access-key-id', variable: 'AWS_ACCESS_KEY_ID'),
+    string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY')
+  ]) {
+    script {
+      sh '''
+        echo "======================================================"
+        echo "  CHECKING & INSTALLING DEPENDENCIES"
+        echo "======================================================"
+        
+        # 1. Tự động kiểm tra và cài đặt pip3 tùy theo OS của Jenkins Agent
+        if ! command -v pip3 >/dev/null 2>&1; then
+          echo "[*] pip3 not found. Detecting OS package manager..."
           
-          ASFF_FILE="${ASFF_REPORT_DIR}/securityhub-asff.json"
-          
-          if [ ! -f "${ASFF_FILE}" ]; then
-            echo "[!] ASFF file not found: ${ASFF_FILE}"
+          if command -v apt-get >/dev/null 2>&1; then
+            echo "[+] Debian/Ubuntu detected. Installing python3-pip..."
+            # Cập nhật danh sách gói nếu cần thiết, chuyển hướng lỗi ra ngoài để tránh treo
+            sudo apt-get update -y || apt-get update -y || true
+            sudo apt-get install -y python3-pip || apt-get install -y python3-pip
+          elif command -v apk >/dev/null 2>&1; then
+            echo "[+] Alpine Linux detected. Installing py3-pip..."
+            apk add --no-cache python3 py3-pip
+          elif command -v yum >/dev/null 2>&1; then
+            echo "[+] RHEL/CentOS detected. Installing python3-pip..."
+            sudo yum install -y python3-pip || yum install -y python3-pip
+          else
+            echo "[!] Unknown OS. Cannot install pip3 automatically."
             exit 1
           fi
+        fi
 
-          echo "[*] Installing boto3..."
-          pip3 install --user --no-cache-dir boto3
-          
-          
-          # Count findings
-          FINDING_COUNT=$(python3 -c "import json; data=json.load(open('${ASFF_FILE}')); print(len(data) if isinstance(data, list) else len(data.get('findings', [])))")
-          echo "[*] ASFF file contains ${FINDING_COUNT} findings"
-          
-          if [ "${FINDING_COUNT}" -eq 0 ]; then
-            echo "[*] No findings to import"
-            exit 0
-          fi
-          
-          # Import findings
-          python3 <<'PYTHON_SCRIPT'
+        # 2. Kiểm tra và cài đặt thư viện boto3 cho Python
+        echo "[*] Checking boto3 library..."
+        if ! python3 -c "import boto3" >/dev/null 2>&1; then
+          echo "[+] boto3 not found. Installing via pip3..."
+          # Ưu tiên cài --user nếu không có quyền root, hoặc cài global nếu có quyền
+          pip3 install --user --no-cache-dir boto3 || pip3 install --no-cache-dir boto3
+        else
+          echo "[+] boto3 is already installed."
+        fi
+
+        echo "======================================================"
+        echo "  IMPORTING ASFF FINDINGS TO SECURITY HUB"
+        echo "======================================================"
+        
+        ASFF_FILE="${ASFF_REPORT_DIR}/securityhub-asff.json"
+        
+        if [ ! -f "${ASFF_FILE}" ]; then
+          echo "[!] ASFF file not found: ${ASFF_FILE}"
+          exit 1
+        fi
+        
+        # Count findings
+        FINDING_COUNT=$(python3 -c "import json; data=json.load(open('${ASFF_FILE}')); print(len(data) if isinstance(data, list) else len(data.get('findings', [])))")
+        echo "[*] ASFF file contains ${FINDING_COUNT} findings"
+        
+        if [ "${FINDING_COUNT}" -eq 0 ]; then
+          echo "[*] No findings to import"
+          exit 0
+        fi
+        
+        # Import findings
+        python3 <<'PYTHON_SCRIPT'
 import json
 import boto3
 import sys
@@ -473,10 +504,11 @@ for i in range(0, len(findings), 100):
 print(f"[+] Total: {total_imported} imported, {total_failed} failed")
 sys.exit(0 if total_failed == 0 else 1)
 PYTHON_SCRIPT
-        '''
-      }
+      '''
     }
   }
+}
+
 }
 
 
