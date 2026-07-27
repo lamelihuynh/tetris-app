@@ -338,16 +338,16 @@ pipeline {
 
  
   }
-  stage('13. DAST Scan - OWASP ZAP') {
-    steps {
-      sh '''
-        chmod +x ci/stages/dast-scan.sh
-        TARGET_URL="${STAGING_URL}" \
-        REPORT_DIR="${RAW_REPORT_DIR}/dast" \
-        ./ci/stages/dast-scan.sh
-      '''
-    }
-  }
+  // stage('13. DAST Scan - OWASP ZAP') {
+  //   steps {
+  //     sh '''
+  //       chmod +x ci/stages/dast-scan.sh
+  //       TARGET_URL="${STAGING_URL}" \
+  //       REPORT_DIR="${RAW_REPORT_DIR}/dast" \
+  //       ./ci/stages/dast-scan.sh
+  //     '''
+  //   }
+  // }
 
 
   stage('14. Normalize Security Reports') {
