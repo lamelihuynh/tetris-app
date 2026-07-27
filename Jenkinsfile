@@ -419,6 +419,10 @@ pipeline {
             echo "[!] ASFF file not found: ${ASFF_FILE}"
             exit 1
           fi
+
+          echo "[*] Installing boto3..."
+          pip3 install --user --no-cache-dir boto3
+          
           
           # Count findings
           FINDING_COUNT=$(python3 -c "import json; data=json.load(open('${ASFF_FILE}')); print(len(data) if isinstance(data, list) else len(data.get('findings', [])))")
