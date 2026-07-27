@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Convert normalized DevSecOps findings into AWS Security Hub ASFF."""
+"""Convert normalized DevSecOps findings into AWS Security Hub ASFF.
+
+FIXED VERSION: Outputs direct array of ASFF findings for BatchImportFindings API.
+AWS Security Hub expects: [{ SchemaVersion, Id, ProductArn, ... }, ...]
+NOT: { schemaVersion, findings: [...] }
+"""
 
 from __future__ import annotations
 
@@ -181,18 +186,20 @@ def main() -> int:
         for finding in normalized.get("findings", [])
     ]
 
-    output = {
-        "schemaVersion": "securityhub-asff/v1",
-        "generatedAt": timestamp,
-        "region": args.region,
-        "accountId": account_id,
-        "productArn": product_arn,
-        "findingCount": len(findings),
-        "findings": findings,
-    }
-    write_json(Path(args.out), output)
+    # ✨ FIX: Output DIRECT ARRAY, not wrapper object
+    # AWS Security Hub BatchImportFindings expects an array of ASFF findings
+    # NOT: { "schemaVersion": "...", "findings": [...] }
+    # YES: [ { "SchemaVersion": "2018-10-08", ... }, ... ]
+    
+    write_json(Path(args.out), findings)
 
-    print(f"[+] Generated {len(findings)} ASFF findings into {args.out}")
+    print(f"[+] Generated {len(findings)} ASFF findings")
+    print(f"[+] Output format: Direct array (compatible with Security Hub BatchImportFindings)")
+    print(f"[+] Saved to: {args.out}")
+    
+    if len(findings) == 0:
+        print("[*] No findings generated. Check if normalized report contains any findings.")
+    
     return 0
 
 

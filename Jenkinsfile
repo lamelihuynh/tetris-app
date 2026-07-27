@@ -400,6 +400,82 @@ pipeline {
   }
 
 
+
+  stage('17. Import Findings to AWS Security Hub') {
+  steps {
+    withCredentials([
+      string(credentialsId: 'aws-access-key-id', variable: 'AWS_ACCESS_KEY_ID'),
+      string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY')
+    ]) {
+      script {
+        sh '''
+          echo "======================================================"
+          echo "  IMPORTING ASFF FINDINGS TO SECURITY HUB"
+          echo "======================================================"
+          
+          ASFF_FILE="${ASFF_REPORT_DIR}/securityhub-asff.json"
+          
+          if [ ! -f "${ASFF_FILE}" ]; then
+            echo "[!] ASFF file not found: ${ASFF_FILE}"
+            exit 1
+          fi
+          
+          # Count findings
+          FINDING_COUNT=$(python3 -c "import json; data=json.load(open('${ASFF_FILE}')); print(len(data) if isinstance(data, list) else len(data.get('findings', [])))")
+          echo "[*] ASFF file contains ${FINDING_COUNT} findings"
+          
+          if [ "${FINDING_COUNT}" -eq 0 ]; then
+            echo "[*] No findings to import"
+            exit 0
+          fi
+          
+          # Import findings
+          python3 <<'PYTHON_SCRIPT'
+import json
+import boto3
+import sys
+import os
+
+asff_file = os.environ.get('ASFF_REPORT_DIR') + '/securityhub-asff.json'
+aws_region = os.environ.get('AWS_REGION', 'ap-southeast-2')
+
+with open(asff_file) as f:
+    data = json.load(f)
+
+findings = data if isinstance(data, list) else data.get('findings', [])
+
+if not findings:
+    print("[*] No findings to import")
+    sys.exit(0)
+
+print(f"[*] Importing {len(findings)} findings...")
+
+client = boto3.client('securityhub', region_name=aws_region)
+
+total_imported = 0
+total_failed = 0
+
+for i in range(0, len(findings), 100):
+    batch = findings[i:i+100]
+    try:
+        response = client.batch_import_findings(Findings=batch)
+        total_imported += response.get('SuccessCount', 0)
+        total_failed += response.get('FailedCount', 0)
+        print(f"[+] Batch {i//100 + 1}: {response.get('SuccessCount')} imported")
+    except Exception as e:
+        print(f"[!] Error: {e}")
+        total_failed += len(batch)
+
+print(f"[+] Total: {total_imported} imported, {total_failed} failed")
+sys.exit(0 if total_failed == 0 else 1)
+PYTHON_SCRIPT
+        '''
+      }
+    }
+  }
+}
+
+
   }
 }
 
